@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小登哥后台</title>
+<link rel="stylesheet" href="./assets/styles/pages/admin.css">
+</head>
+<body>
+  <div class="page">
+    <div id="login-view" class="login-wrap">
+      <h2>小登哥后台</h2>
+      <p>先用单管理员账号密码登录。第一版可以查看模型点击/成功数据、二维码展示/切换数据和报告记录。</p>
+      <div class="field">
+        <label for="admin-username">管理员账号</label>
+        <input id="admin-username" autocomplete="username" placeholder="请输入账号">
+      </div>
+      <div class="field">
+        <label for="admin-password">管理员密码</label>
+        <input id="admin-password" type="password" autocomplete="current-password" placeholder="请输入密码">
+      </div>
+      <button class="btn primary" id="login-btn">登录后台</button>
+      <div class="error" id="login-error"></div>
+    </div>
+
+    <div id="dashboard-view" class="hidden">
+      <div class="hero">
+        <div>
+          <h1 class="hero-title">小登哥运营后台</h1>
+          <p class="hero-sub">查看二维码展示 / 切换统计、模型点击 / 成功统计，以及最新报告记录。</p>
+        </div>
+        <div class="top-actions">
+          <div class="chip" id="login-status">已登录</div>
+          <button class="btn secondary" id="refresh-btn">刷新数据</button>
+          <button class="btn secondary" id="logout-btn">退出登录</button>
+        </div>
+      </div>
+
+      <div class="dashboard">
+        <div class="card">
+          <h2 class="section-title">核心指标</h2>
+          <p class="section-sub">今天 vs 累计，一眼看到模型使用和支付二维码触达情况。</p>
+          <div class="metric-grid" id="metric-grid"></div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">待确认订单</h2>
+          <p class="section-sub">用户扫码支付后，在此确认到账即可解锁深度解析。</p>
+          <div class="order-tabs">
+            <button class="order-tab active" data-status="CREATED">待确认</button>
+            <button class="order-tab" data-status="PAID">已支付</button>
+            <button class="order-tab" data-status="">全部</button>
+          </div>
+          <table class="report-table order-table">
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>金额</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>支付时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="order-body"></tbody>
+          </table>
+          <div class="empty hidden" id="order-empty">暂无订单数据</div>
+          <div class="pager">
+            <div class="pager-info" id="order-pager-info"></div>
+            <div>
+              <button class="btn secondary" id="order-prev-page">上一页</button>
+              <button class="btn secondary" id="order-next-page">下一页</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">最近 7 天趋势</h2>
+          <p class="section-sub">重点关注 DeepSeek / 深度解析点击与成功，以及二维码展示热度。</p>
+          <table class="trend-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>DeepSeek 点击</th>
+                <th>深度解析 点击</th>
+                <th>DeepSeek 成功</th>
+                <th>深度解析 成功</th>
+                <th>支付弹窗</th>
+                <th>微信展示</th>
+                <th>支付宝展示</th>
+              </tr>
+            </thead>
+            <tbody id="trend-body"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">报告记录</h2>
+          <p class="section-sub">支持按报告编号、双方昵称、模型搜索，方便回查具体生成记录。</p>
+          <div class="filters">
+            <input id="report-query" placeholder="搜索报告编号 / 昵称 / 模型">
+            <button class="btn primary" id="search-btn">搜索</button>
+          </div>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>报告编号</th>
+                <th>双方昵称</th>
+                <th>模型</th>
+                <th>分数</th>
+                <th>关系类型</th>
+                <th>微信号</th>
+                <th>生成时间</th>
+              </tr>
+            </thead>
+            <tbody id="report-body"></tbody>
+          </table>
+          <div class="empty hidden" id="report-empty">暂时还没有匹配的数据。</div>
+          <div class="pager">
+            <div class="pager-info" id="pager-info"></div>
+            <div>
+              <button class="btn secondary" id="prev-page">上一页</button>
+              <button class="btn secondary" id="next-page">下一页</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script type="module" src="./assets/scripts/pages/admin.js"></script>
+</body>
+</html>
+

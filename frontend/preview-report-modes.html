@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<title>报告主题预览 · 爱情 / 事业 / 财运</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/styles/pages/preview-report-modes.css">
+</head>
+<body>
+<div class="bg-deco">
+  <div class="star" style="top: 12%; left: 10%; font-size: 14px;">✦</div>
+  <div class="star" style="top: 28%; right: 12%; font-size: 10px; animation-delay: 1.1s;">✧</div>
+  <div class="star" style="top: 58%; left: 14%; font-size: 13px; animation-delay: 2s;">✦</div>
+  <div class="star" style="top: 74%; right: 10%; font-size: 12px; animation-delay: 0.4s;">✧</div>
+</div>
+
+<div class="app">
+  <div id="page-form" class="page">
+    <div class="hero">
+      <div class="hero-tag" id="hero-tag">LOVE REPORT · 爱情合盘</div>
+      <h1 class="hero-title" id="hero-title">你和 TA<br>会如何靠近</h1>
+      <div class="hero-deco">✦ ✧ ✦</div>
+      <div class="by-line">PREVIEW BY <span class="name">小登哥 ⋅ XIAODENG</span></div>
+    </div>
+
+    <div class="segment-card">
+      <div class="segment-label">报告主题</div>
+      <div class="theme-switcher" id="theme-switcher">
+        <button class="theme-option active" data-theme="love">
+          <span class="theme-icon">❤</span>
+          <span class="theme-copy">
+            <strong>爱情</strong>
+            <small>双人合盘</small>
+          </span>
+        </button>
+        <button class="theme-option" data-theme="career">
+          <span class="theme-icon">▲</span>
+          <span class="theme-copy">
+            <strong>事业</strong>
+            <small>单人发展</small>
+          </span>
+        </button>
+        <button class="theme-option" data-theme="wealth">
+          <span class="theme-icon">¥</span>
+          <span class="theme-copy">
+            <strong>财运</strong>
+            <small>单人财富</small>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="segment-card">
+      <div class="segment-row">
+        <div>
+          <div class="segment-label">分析深度</div>
+          <div class="flow-title" id="flow-title">爱情继续沿用现在的双人合盘结构，重点换成主题 prompt。</div>
+        </div>
+        <div class="model-switcher">
+          <button class="model-option">免费版</button>
+          <button class="model-option active">深度解析</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-card hidden" id="source-card">
+      <div class="segment-label">信息来源</div>
+      <div class="source-switcher">
+        <button class="source-option active" id="source-current" data-source="current">默认当前人</button>
+        <button class="source-option" id="source-manual" data-source="manual">重新填写</button>
+      </div>
+      <div class="source-hint" id="source-hint">会先带入当前人的资料，你也可以切换成手动填写单独分析对象。</div>
+    </div>
+
+    <div class="card">
+      <div class="prefill-banner hidden" id="prefill-banner">
+        <div>
+          <div class="prefill-title">已带入当前人的信息</div>
+          <div class="prefill-sub">事业和财运默认单人分析，后续正式接入时可以直接读取当前表单。</div>
+        </div>
+        <button class="prefill-btn" id="prefill-edit-btn">改成手动填写</button>
+      </div>
+
+      <div class="person-section">
+        <div class="person-title"><span class="dot"></span><span id="primary-title">关于你</span></div>
+        <div class="field">
+          <label class="field-label">名字</label>
+          <input class="input" id="a-name" maxlength="20">
+        </div>
+        <div class="field">
+          <label class="field-label">性别</label>
+          <div class="gender-group">
+            <button type="button" class="gender-btn" data-target="a-gender" data-value="female">女生</button>
+            <button type="button" class="gender-btn" data-target="a-gender" data-value="male">男生</button>
+          </div>
+          <input type="hidden" id="a-gender">
+        </div>
+        <div class="field">
+          <label class="field-label">生日</label>
+          <div class="date-select-group">
+            <select class="input date-select" id="a-birthdate-year"></select>
+            <select class="input date-select" id="a-birthdate-month"></select>
+            <select class="input date-select" id="a-birthdate-day"></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">出生时间</label>
+            <input class="input" id="a-birthtime" type="time">
+          </div>
+          <div class="field">
+            <label class="field-label">出生城市</label>
+            <input class="input" id="a-birthplace" maxlength="20">
+          </div>
+        </div>
+      </div>
+
+      <div class="person-section" id="secondary-person">
+        <div class="person-title purple"><span class="dot"></span>关于 TA</div>
+        <div class="field">
+          <label class="field-label">TA 的名字</label>
+          <input class="input" id="b-name" maxlength="20">
+        </div>
+        <div class="field">
+          <label class="field-label">性别</label>
+          <div class="gender-group">
+            <button type="button" class="gender-btn" data-target="b-gender" data-value="female">女生</button>
+            <button type="button" class="gender-btn" data-target="b-gender" data-value="male">男生</button>
+          </div>
+          <input type="hidden" id="b-gender">
+        </div>
+        <div class="field">
+          <label class="field-label">生日</label>
+          <div class="date-select-group">
+            <select class="input date-select" id="b-birthdate-year"></select>
+            <select class="input date-select" id="b-birthdate-month"></select>
+            <select class="input date-select" id="b-birthdate-day"></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">出生时间</label>
+            <input class="input" id="b-birthtime" type="time">
+          </div>
+          <div class="field">
+            <label class="field-label">出生城市</label>
+            <input class="input" id="b-birthplace" maxlength="20">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="submit-btn" id="preview-btn">预览爱情报告</button>
+      <button class="secondary-btn" id="shuffle-btn">切换一组示例</button>
+    </div>
+  </div>
+
+  <div id="page-report" class="page hidden">
+    <div class="report-nav">
+      <button class="nav-back" id="back-btn">← 修改信息</button>
+      <div class="mini-switcher" id="mini-switcher">
+        <button class="mini-option active" data-theme="love">爱情</button>
+        <button class="mini-option" data-theme="career">事业</button>
+        <button class="mini-option" data-theme="wealth">财运</button>
+      </div>
+    </div>
+
+    <div class="cover">
+      <div class="cover-badge" id="cover-badge">双人合盘报告</div>
+
+      <div class="cover-duo" id="cover-duo">
+        <div class="cover-person">
+          <div class="cover-symbol" id="cover-a-symbol">♐</div>
+          <div class="cover-name" id="cover-a-name">Dewey</div>
+          <div class="cover-meta" id="cover-a-meta">射手 · 月双鱼 · 升狮子</div>
+        </div>
+        <div class="cover-link" id="cover-link">❤</div>
+        <div class="cover-person">
+          <div class="cover-symbol" id="cover-b-symbol">♏</div>
+          <div class="cover-name" id="cover-b-name">Snow</div>
+          <div class="cover-meta" id="cover-b-meta">天蝎 · 月巨蟹 · 升水瓶</div>
+        </div>
+      </div>
+
+      <div class="cover-single hidden" id="cover-single">
+        <div class="cover-single-symbol" id="cover-single-symbol">▲</div>
+        <div class="cover-single-name" id="cover-single-name">Dewey</div>
+        <div class="cover-single-meta" id="cover-single-meta">射手 · 月双鱼 · 升狮子</div>
+        <div class="cover-single-source" id="cover-single-source">资料来源 · 默认当前人</div>
+      </div>
+
+      <div class="cover-title-cn" id="cover-title-cn">爱情合盘</div>
+      <div class="cover-title-en" id="cover-title-en">— The Magnetic Bond —</div>
+
+      <div class="score-wrap">
+        <span class="score-value" id="score-value">89</span>
+        <span class="score-unit">/100</span>
+      </div>
+      <div class="score-label" id="score-label">LOVE INDEX</div>
+
+      <div class="report-type" id="report-type">高吸引慢热型</div>
+      <div class="tagline" id="tagline">越熟越有张力，越认真越需要温柔表达。</div>
+
+      <div class="report-meta">
+        <span id="report-id">预览编号 · PREVIEW-LOVE-01</span>
+        <span id="report-date">2026 · MAY · 24</span>
+      </div>
+    </div>
+
+    <div class="metric-row" id="metric-row"></div>
+
+    <div class="summary-card">
+      <div class="summary-title">报告焦点</div>
+      <div class="summary-list" id="summary-list"></div>
+    </div>
+
+    <div id="chapters-container"></div>
+
+    <div class="essence">
+      <div class="essence-head">
+        <div class="essence-icon" id="essence-icon">✦</div>
+        <div>
+          <div class="essence-title" id="essence-title">相处锦囊</div>
+          <div class="essence-sub" id="essence-sub">KEEP THE SPARK</div>
+        </div>
+      </div>
+      <ul class="essence-list" id="essence-list"></ul>
+    </div>
+
+    <div class="action-bar">
+      <div class="action-bar-title">KEEP IT FOREVER</div>
+      <div class="action-bar-sub">结果页里继续保留分享图、PDF 和切换其他主题的入口。</div>
+      <div class="action-grid">
+        <button class="action-btn primary" id="share-btn">生成分享图</button>
+        <button class="action-btn secondary" id="pdf-btn">下载 PDF</button>
+      </div>
+      <button class="full-btn" id="switch-btn">切换其他主题</button>
+      <button class="full-btn light" id="edit-btn">返回修改信息</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/scripts/pages/preview-report-modes.js"></script>
+</body>
+</html>

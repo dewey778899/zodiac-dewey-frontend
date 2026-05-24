@@ -1,0 +1,20 @@
+# Frontend build artifacts
+dist/
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Misc
+.workbuddy/
+data/
+*.log

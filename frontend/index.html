@@ -1,0 +1,520 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<title>灵魂合盘 · 你和 TA 的缘分密码 · 小登哥出品</title>
+
+<!-- 字体:思源宋体(报告主体)+ 玉ぴょん(标题装饰) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+
+<!-- jsPDF:生成 PDF(分享图用原生 Canvas) -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<link rel="stylesheet" href="./assets/styles/pages/index.css">
+</head>
+<body>
+
+
+
+<div class="bg-deco">
+  <div class="star" style="top: 15%; left: 8%; font-size: 14px;">✦</div>
+  <div class="star" style="top: 25%; right: 10%; font-size: 10px; animation-delay: 1s;">✧</div>
+  <div class="star" style="top: 60%; left: 12%; font-size: 12px; animation-delay: 2s;">✦</div>
+  <div class="star" style="top: 75%; right: 8%; font-size: 14px; animation-delay: 0.5s;">✧</div>
+  <div class="star" style="top: 40%; right: 15%; font-size: 10px; animation-delay: 1.5s;">✦</div>
+</div>
+
+<div class="app">
+
+  <!-- ============== Page 1: Form ============== -->
+  <div id="page-form" class="page">
+    <div class="hero">
+      <div class="hero-tag" id="hero-tag">SOULMATE · 灵魂合盘</div>
+      <h1 class="hero-title" id="hero-title">你和 TA<br/>到底有多合</h1>
+      <div class="hero-deco">✦ ✧ ✦</div>
+      <div class="by-line">PRESENTED BY <span class="name">小登哥 ⋅ XIAODENG</span></div>
+    </div>
+
+    <div class="theme-nav-wrap">
+      <div class="theme-nav" id="theme-nav">
+        <button type="button" class="theme-tab active" data-theme="love">
+          <span class="theme-tab-icon">❤</span>
+          <span class="theme-tab-text">爱情</span>
+        </button>
+        <button type="button" class="theme-tab" data-theme="career">
+          <span class="theme-tab-icon">▲</span>
+          <span class="theme-tab-text">事业</span>
+        </button>
+        <button type="button" class="theme-tab" data-theme="wealth">
+          <span class="theme-tab-icon">¥</span>
+          <span class="theme-tab-text">财运</span>
+        </button>
+        <div class="theme-tab-indicator" id="theme-tab-indicator"></div>
+      </div>
+      <div class="theme-hint" id="theme-hint">左右滑动切换不同测算主题</div>
+    </div>
+
+    <div class="form-slider-shell">
+      <div class="form-slides" id="form-slides">
+        <section class="form-slide" data-theme="love">
+          <div class="card slide-card">
+            <div class="slide-head">
+              <div class="slide-tag">LOVE REPORT</div>
+              <div class="slide-title">爱情合盘</div>
+              <div class="slide-sub">保留双人输入，重点解析吸引力、矛盾点和相处节奏。</div>
+            </div>
+
+            <div class="model-switcher slide-model-switcher">
+              <button type="button" class="model-option" data-model="deepseek">免费版<span class="model-badge">· 基础解析</span></button>
+              <button type="button" class="model-option active" data-model="claude">深度解析<span class="model-badge">· Opus 4.7</span></button>
+            </div>
+
+            <div class="person-section">
+              <div class="field">
+                <label class="field-label">你的名字(昵称)</label>
+                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20">
+                <div class="quick-fill">
+                  <button type="button" class="quick-fill-btn" data-demo="dewey">🎯 体验:dewey</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">性别</label>
+                <div class="gender-group">
+                  <button type="button" class="gender-btn" data-person="a" data-value="female">女生 ♀</button>
+                  <button type="button" class="gender-btn" data-person="a" data-value="male">男生 ♂</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">生日</label>
+                <div class="date-select-group">
+                  <select class="input date-select person-select" data-person="a" data-field="birthYear"></select>
+                  <select class="input date-select person-select" data-person="a" data-field="birthMonth"></select>
+                  <select class="input date-select person-select" data-person="a" data-field="birthDay"></select>
+                </div>
+              </div>
+              <div class="field-row birth-place-row">
+                <div class="field time-field">
+                  <label class="field-label">出生时间 <span class="opt">(算月亮上升用)</span></label>
+                  <input class="input person-input" data-person="a" data-field="birthTime" type="time" value="12:30">
+                </div>
+                <div class="field city-field">
+                  <label class="field-label">出生城市 <span class="opt">(可选)</span></label>
+                  <button type="button" class="input city-picker-trigger" data-person="a">
+                    <span class="city-picker-text">点击选择省 / 市 / 区</span>
+                    <span class="city-picker-arrow">›</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="person-section">
+              <div class="field">
+                <label class="field-label">TA的名字(昵称)</label>
+                <input class="input person-input" data-person="b" data-field="name" placeholder="请输入名字" maxlength="20">
+                <div class="quick-fill">
+                  <button type="button" class="quick-fill-btn" data-demo="snow">🎯 体验:snow</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">性别</label>
+                <div class="gender-group">
+                  <button type="button" class="gender-btn" data-person="b" data-value="female">女生 ♀</button>
+                  <button type="button" class="gender-btn" data-person="b" data-value="male">男生 ♂</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">生日</label>
+                <div class="date-select-group">
+                  <select class="input date-select person-select" data-person="b" data-field="birthYear"></select>
+                  <select class="input date-select person-select" data-person="b" data-field="birthMonth"></select>
+                  <select class="input date-select person-select" data-person="b" data-field="birthDay"></select>
+                </div>
+              </div>
+              <div class="field-row birth-place-row">
+                <div class="field time-field">
+                  <label class="field-label">出生时间 <span class="opt">(算月亮上升用)</span></label>
+                  <input class="input person-input" data-person="b" data-field="birthTime" type="time" value="12:30">
+                </div>
+                <div class="field city-field">
+                  <label class="field-label">出生城市 <span class="opt">(可选)</span></label>
+                  <button type="button" class="input city-picker-trigger" data-person="b">
+                    <span class="city-picker-text">点击选择省 / 市 / 区</span>
+                    <span class="city-picker-arrow">›</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-slide" data-theme="career">
+          <div class="card slide-card">
+            <div class="slide-head">
+              <div class="slide-tag">CAREER READING</div>
+              <div class="slide-title">事业测算</div>
+            </div>
+
+            <div class="model-switcher slide-model-switcher">
+              <button type="button" class="model-option" data-model="deepseek">免费版<span class="model-badge">· 基础解析</span></button>
+              <button type="button" class="model-option active" data-model="claude">深度解析<span class="model-badge">· Opus 4.7</span></button>
+            </div>
+
+            <div class="person-section">
+              <div class="field">
+                <label class="field-label">名字(昵称)</label>
+                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20">
+              </div>
+              <div class="field">
+                <label class="field-label">性别</label>
+                <div class="gender-group">
+                  <button type="button" class="gender-btn" data-person="a" data-value="female">女生 ♀</button>
+                  <button type="button" class="gender-btn" data-person="a" data-value="male">男生 ♂</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">生日</label>
+                <div class="date-select-group">
+                  <select class="input date-select person-select" data-person="a" data-field="birthYear"></select>
+                  <select class="input date-select person-select" data-person="a" data-field="birthMonth"></select>
+                  <select class="input date-select person-select" data-person="a" data-field="birthDay"></select>
+                </div>
+              </div>
+              <div class="field-row birth-place-row">
+                <div class="field time-field">
+                  <label class="field-label">出生时间 <span class="opt">(算月亮上升用)</span></label>
+                  <input class="input person-input" data-person="a" data-field="birthTime" type="time" value="12:30">
+                </div>
+                <div class="field city-field">
+                  <label class="field-label">出生城市 <span class="opt">(可选)</span></label>
+                  <button type="button" class="input city-picker-trigger" data-person="a">
+                    <span class="city-picker-text">点击选择省 / 市 / 区</span>
+                    <span class="city-picker-arrow">›</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-slide" data-theme="wealth">
+          <div class="card slide-card">
+            <div class="slide-head">
+              <div class="slide-tag">WEALTH READING</div>
+              <div class="slide-title">财运测算</div>
+              <div class="slide-sub">重点看赚钱方式、守财节奏和副业机会。</div>
+            </div>
+
+            <div class="model-switcher slide-model-switcher">
+              <button type="button" class="model-option" data-model="deepseek">免费版<span class="model-badge">· 基础解析</span></button>
+              <button type="button" class="model-option active" data-model="claude">深度解析<span class="model-badge">· Opus 4.7</span></button>
+            </div>
+
+            <div class="person-section">
+              <div class="field">
+                <label class="field-label">名字(昵称)</label>
+                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20">
+              </div>
+              <div class="field">
+                <label class="field-label">性别</label>
+                <div class="gender-group">
+                  <button type="button" class="gender-btn" data-person="a" data-value="female">女生 ♀</button>
+                  <button type="button" class="gender-btn" data-person="a" data-value="male">男生 ♂</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">生日</label>
+                <div class="date-select-group">
+                  <select class="input date-select person-select" data-person="a" data-field="birthYear"></select>
+                  <select class="input date-select person-select" data-person="a" data-field="birthMonth"></select>
+                  <select class="input date-select person-select" data-person="a" data-field="birthDay"></select>
+                </div>
+              </div>
+              <div class="field-row birth-place-row">
+                <div class="field time-field">
+                  <label class="field-label">出生时间 <span class="opt">(算月亮上升用)</span></label>
+                  <input class="input person-input" data-person="a" data-field="birthTime" type="time" value="12:30">
+                </div>
+                <div class="field city-field">
+                  <label class="field-label">出生城市 <span class="opt">(可选)</span></label>
+                  <button type="button" class="input city-picker-trigger" data-person="a">
+                    <span class="city-picker-text">点击选择省 / 市 / 区</span>
+                    <span class="city-picker-arrow">›</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <div id="form-error" class="error-box hidden"></div>
+    <button class="submit-btn" id="submit-btn">✨ 解析我们的灵魂合盘</button>
+  </div>
+
+  <!-- ============== Page 2: Loading ============== -->
+  <div id="page-loading" class="page hidden">
+    <div class="loading">
+      <div class="loading-card">
+        <div class="loading-badge">REPORT IN PROGRESS</div>
+        <div class="loading-title">正在生成你们的合盘报告</div>
+        <div class="loading-sub">每一步都会展示出来，完成后会自动打勾。整个过程大约需要 30-60 秒，请稍等一下。</div>
+        <div class="loading-progress-head">
+          <div class="loading-progress-label" id="loading-progress-label">准备开始...</div>
+          <div class="loading-progress-value" id="loading-progress-value">0%</div>
+        </div>
+        <div class="loading-progress-track">
+          <div class="loading-progress-fill" id="loading-progress-fill"></div>
+        </div>
+        <div class="loading-steps" id="loading-steps"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== Page 3: Report ============== -->
+  <div id="page-report" class="page hidden">
+    <div id="report-content">
+      <!-- 报告封面 -->
+      <div class="cover" id="cover">
+        <div class="cover-corner tl"></div>
+        <div class="cover-corner tr"></div>
+        <div class="cover-corner bl"></div>
+        <div class="cover-corner br"></div>
+        <div class="cover-shine"></div>
+
+        <div class="cover-emblem">
+          <div class="cover-emblem-text">SOULMATE COMPATIBILITY</div>
+          <div class="cover-emblem-deco">✦ ✧ ✦</div>
+        </div>
+
+        <div class="cover-zodiac-row" id="cover-zodiac-row">
+          <div class="cover-zodiac" id="cover-zodiac-a-block">
+            <div class="cover-zodiac-icon" id="cover-zodiac-a-icon">♏</div>
+            <div class="cover-zodiac-name" id="cover-zodiac-a-name">SCORPIO</div>
+            <div class="cover-zodiac-person" id="cover-person-a">—</div>
+          </div>
+          <div class="cover-heart" id="cover-heart">❤</div>
+          <div class="cover-zodiac" id="cover-zodiac-b-block">
+            <div class="cover-zodiac-icon" id="cover-zodiac-b-icon">♐</div>
+            <div class="cover-zodiac-name" id="cover-zodiac-b-name">SAGITTARIUS</div>
+            <div class="cover-zodiac-person" id="cover-person-b">—</div>
+          </div>
+        </div>
+
+        <div class="cover-title-cn" id="cover-title-cn">灵魂合盘</div>
+        <div class="cover-title-en" id="cover-title-en">— The Cosmic Bond —</div>
+
+        <div class="cover-score-wrap">
+          <span class="cover-score" id="cover-score">--</span><span class="cover-score-unit">/100</span>
+          <div class="cover-score-label" id="cover-score-label">SOULMATE INDEX</div>
+        </div>
+
+        <div class="cover-type-row">
+          <span class="cover-type" id="cover-type">—</span>
+        </div>
+
+        <div class="cover-tagline" id="cover-tagline">—</div>
+
+        <div class="cover-meta">
+          <div class="cover-meta-id" id="cover-id">珍藏编号 · SASC-000000-PF4E</div>
+          <div class="cover-meta-date" id="cover-date">— · — · —</div>
+          <div class="cover-by">CREATED BY <span class="name">小登哥 ⋅ XIAODENG</span></div>
+        </div>
+      </div>
+
+      <!-- 章节 -->
+      <!-- 三大星座详情(太阳/月亮/上升) -->
+      <div class="zodiac-details" id="zodiac-details"></div>
+
+      <div id="chapters-container"></div>
+
+      <!-- 精华相处建议 -->
+      <div class="essence" id="essence-section">
+        <div class="essence-head">
+          <div class="essence-head-icon">💎</div>
+          <div class="essence-head-title">珍 藏 锦 囊</div>
+          <div class="essence-head-sub">ESSENCE OF YOUR BOND</div>
+        </div>
+        <ul class="essence-list" id="essence-list"></ul>
+      </div>
+    </div>
+
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <div class="action-bar-title">— KEEP IT FOREVER —</div>
+      <div class="action-bar-sub">珍藏报告，或直接分享给 TA</div>
+      <div class="action-grid">
+        <button class="action-btn primary" id="share-btn">
+          <span class="action-btn-icon">📤</span>
+          <span>生成分享卡片</span>
+        </button>
+        <button class="action-btn secondary" id="pdf-btn">
+          <span class="action-btn-icon">📄</span>
+          <span>下载完整报告</span>
+        </button>
+      </div>
+      <button class="restart-btn-full" id="copy-link-btn" style="border-style:solid;color:var(--lilac-deep);">🔗 分享给TA</button>
+      <button class="restart-btn-full" id="restart-btn">和TA再测一次</button>
+    </div>
+
+    <div class="report-footer">
+      <div class="note">这份报告专属于你们 · 仅供参考</div>
+      <div class="note">愿你被爱,也勇敢去爱 💕</div>
+      <div class="by">CREATED BY <span class="name">小登哥 ⋅ XIAODENG</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay hidden" id="share-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">分享你们的合盘卡片</div>
+      <div class="modal-sub">长按图片可保存到相册</div>
+    </div>
+    <div class="modal-body">
+      <div class="share-card-preview" id="share-preview"></div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" id="share-close">关闭</button>
+        <button class="modal-btn primary" id="share-download">保存到相册</button>
+      </div>
+      <div class="modal-tip">支持直接分享到微信/钉钉/QQ<br/>若无法分享，将自动下载图片，请长按保存到相册</div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="pay-modal-overlay hidden" id="pay-modal">
+  <div class="pay-modal">
+    <div class="pay-modal-header">
+      <button class="pay-modal-close" id="pay-modal-close">✕</button>
+      <div class="pay-modal-icon">✨</div>
+      <div class="pay-modal-title">升级深度解析</div>
+      <div class="pay-modal-subtitle">Claude 4.7 · 目前最强 AI 占星引擎</div>
+    </div>
+    <div class="pay-modal-body">
+      <div class="pay-tab-group">
+        <div class="pay-tab active" data-pay-method="wechat" id="pay-tab-wechat">微信支付</div>
+        <div class="pay-tab" data-pay-method="alipay" id="pay-tab-alipay">支付宝</div>
+      </div>
+      <div class="pay-qr-area">
+        <div style="font-size: 14px; color: var(--ink-light); margin-bottom: 10px; font-weight: 500;">长按识别二维码支付</div>
+        <div class="pay-qr-wrapper">
+          <img id="pay-qr-img" src="img/wechat_qr.jpg" alt="支付二维码">
+        </div>
+      </div>
+      <div class="pay-price">¥19.90</div>
+      <div class="pay-open-hint" id="pay-open-hint">默认金额 19.9 元，可使用微信扫码支付到你当前的微信收款码。</div>
+      <button class="pay-open-btn" id="pay-open-btn" type="button">打开微信支付</button>
+      <div class="pay-order-info">
+        <div class="pay-order-label">订单号</div>
+        <div class="pay-order-no" id="pay-order-no">—</div>
+        <div class="pay-order-hint">支付后点击下方按钮即可解锁；如果后台已确认，也会自动解锁。</div>
+      </div>
+      <div class="pay-steps">
+        <div class="pay-step">
+          <div class="pay-step-num">1</div>
+          <div>扫码支付 ¥19.90</div>
+        </div>
+        <div class="pay-step">
+          <div class="pay-step-num">2</div>
+          <div>支付完成后点击按钮，立即进入深度解析</div>
+        </div>
+      </div>
+      <button class="pay-confirm-btn" id="pay-confirm-btn" type="button">我已支付，解锁深度解析</button>
+    </div>
+  </div>
+</div>
+
+<!-- Value Proposition Modal -->
+<div class="pay-modal-overlay hidden" id="value-modal">
+  <div class="pay-modal" style="max-width: 360px;">
+    <div class="pay-modal-header">
+      <button class="pay-modal-close" id="value-modal-close">✕</button>
+      <div class="pay-modal-icon">🔮</div>
+      <div class="pay-modal-title">为什么选择深度解析</div>
+      <div class="pay-modal-subtitle">Claude 4.7 · 专业占星师级别的解读体验</div>
+    </div>
+    <div class="pay-modal-body">
+      <div style="text-align: left; margin: 20px 0;">
+        <div style="display: flex; align-items: flex-start; margin-bottom: 16px; gap: 12px;">
+          <div style="font-size: 20px; flex-shrink: 0;">📖</div>
+          <div>
+            <div style="font-weight: 600; color: var(--ink); margin-bottom: 4px;">Claude 4.7 深度分析</div>
+            <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.6;">4000-6000 字专业级报告，比免费版详细 3 倍</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; margin-bottom: 16px; gap: 12px;">
+          <div style="font-size: 20px; flex-shrink: 0;">🌙</div>
+          <div>
+            <div style="font-weight: 600; color: var(--ink); margin-bottom: 4px;">五大核心星体解析</div>
+            <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.6;">太阳、月亮、上升、金星、火星全面剖析，免费版仅太阳星座</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; margin-bottom: 16px; gap: 12px;">
+          <div style="font-size: 20px; flex-shrink: 0;">💫</div>
+          <div>
+            <div style="font-weight: 600; color: var(--ink); margin-bottom: 4px;">AI 占星师级解读</div>
+            <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.6;">Claude 4.7 训练出的细腻解读，堪比专业占星师</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; margin-bottom: 16px; gap: 12px;">
+          <div style="font-size: 20px; flex-shrink: 0;">🔮</div>
+          <div>
+            <div style="font-weight: 600; color: var(--ink); margin-bottom: 4px;">未来运势预测</div>
+            <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.6;">未来 3 个月感情运势走向指引，免费版无此内容</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="font-size: 20px; flex-shrink: 0;">💎</div>
+          <div>
+            <div style="font-weight: 600; color: var(--ink); margin-bottom: 4px;">6 条珍藏锦囊</div>
+            <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.6;">6 条可落地的相处建议，免费版仅 3 条通用建议</div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 8px;">
+        <button class="pay-confirm-btn" id="value-modal-pay-btn" style="flex: 1; background: linear-gradient(135deg, #ff8b7a, #9b7fc7);">¥19.90 解锁深度解析</button>
+        <button class="pay-confirm-btn" id="value-modal-free-btn" style="flex: 1; background: #f0f0f0; color: var(--ink-light);">先用免费版</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pay-modal-overlay hidden" id="city-picker-modal">
+  <div class="pay-modal city-picker-modal">
+    <div class="pay-modal-header city-picker-header">
+      <button class="pay-modal-close" id="city-picker-close">✕</button>
+      <div class="pay-modal-icon">📍</div>
+      <div class="pay-modal-title">选择出生城市</div>
+      <div class="pay-modal-subtitle" id="city-picker-subtitle">请选择省 / 市 / 区</div>
+    </div>
+    <div class="pay-modal-body city-picker-body">
+      <div class="city-picker-selects">
+        <select class="input city-picker-select" id="city-picker-province">
+          <option value="">省 / 市</option>
+        </select>
+        <select class="input city-picker-select" id="city-picker-city">
+          <option value="">城市</option>
+        </select>
+        <select class="input city-picker-select" id="city-picker-district">
+          <option value="">区 / 县</option>
+        </select>
+      </div>
+      <div class="city-picker-preview" id="city-picker-preview">未选择城市</div>
+      <div class="city-picker-actions">
+        <button class="modal-btn secondary" id="city-picker-clear">清空</button>
+        <button class="modal-btn primary" id="city-picker-confirm">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./assets/scripts/pages/index.js?v=4"></script>
+</body>
+</html>
