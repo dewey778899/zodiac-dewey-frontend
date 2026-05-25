@@ -992,7 +992,8 @@ function validateThemeForm(theme = currentTheme) {
   if (!personA.gender) return normalizedTheme === "love" ? "请选择你的性别" : "请选择分析对象的性别";
   if (!personA.birthYear || !personA.birthMonth || !personA.birthDay) return normalizedTheme === "love" ? "请选择你的生日" : "请选择分析对象的生日";
 
-  if (!isSingleTheme(normalizedTheme)) {
+  // 只有爱情合盘才校验 TA 信息
+  if (normalizedTheme === "love") {
     if (!personB.name.trim()) return "TA 的名字呢?";
     if (!personB.gender) return "请选择 TA 的性别";
     if (!personB.birthYear || !personB.birthMonth || !personB.birthDay) return "请选择 TA 的生日";
