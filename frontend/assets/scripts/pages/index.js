@@ -177,6 +177,27 @@ function getThemeSlide(theme) {
   return document.querySelector(`.form-slide[data-theme="${theme}"]`);
 }
 
+function applyFieldLabels(section, copy, isSecondPerson = false) {
+  const labels = section.querySelectorAll(".field-label");
+  const nameLabel = labels[0];
+  const genderLabel = labels[1];
+  const birthLabel = labels[2];
+  const timeLabel = labels[3];
+  const provinceLabel = section.querySelector(".province-field .field-label");
+  const cityLabel = section.querySelector(".city-name-field .field-label");
+  const districtLabel = section.querySelector(".district-field .field-label");
+  const legacyCityLabel = !provinceLabel && !cityLabel && !districtLabel ? labels[4] : null;
+
+  if (nameLabel) nameLabel.textContent = isSecondPerson && copy.nameB ? copy.nameB : copy.nameA;
+  if (genderLabel) genderLabel.textContent = "性别";
+  if (birthLabel) birthLabel.textContent = "生日";
+  if (timeLabel) timeLabel.innerHTML = '出生时间 <span class="opt">(算月亮上升)</span>';
+  if (provinceLabel) provinceLabel.textContent = "省份";
+  if (cityLabel) cityLabel.textContent = "城市";
+  if (districtLabel) districtLabel.textContent = "区县";
+  if (legacyCityLabel) legacyCityLabel.textContent = copy.cityA;
+}
+
 function forceReadableTexts() {
   const themeCopy = {
     love: {
@@ -241,18 +262,8 @@ function forceReadableTexts() {
     if (!copy) return;
     slide.querySelectorAll(".slide-title").forEach((el) => { el.textContent = copy.slideTitle; });
     slide.querySelectorAll(".slide-sub").forEach((el) => { el.textContent = copy.slideSub; });
-    slide.querySelectorAll(".field-label").forEach((el, index) => {
-      if (index % 5 === 0) {
-        el.textContent = theme === "love" && slide.querySelectorAll(".person-section").length > 1 && index >= 5 ? copy.nameB : copy.nameA;
-      } else if (index % 5 === 1) {
-        el.textContent = "\u6027\u522b";
-      } else if (index % 5 === 2) {
-        el.textContent = "\u751f\u65e5";
-      } else if (index % 5 === 3) {
-        el.innerHTML = "\u51fa\u751f\u65f6\u95f4 <span class=\"opt\">(\u7b97\u6708\u4eae\u4e0a\u5347)</span>";
-      } else if (index % 5 === 4) {
-        el.textContent = copy.cityA;
-      }
+    slide.querySelectorAll(".person-section").forEach((section, index) => {
+      applyFieldLabels(section, copy, theme === "love" && index === 1);
     });
     slide.querySelectorAll(".gender-btn").forEach((btn) => {
       btn.textContent = btn.dataset.value === "female" ? "\u5973\u751f \u2640" : "\u7537\u751f \u2642";
@@ -1200,21 +1211,16 @@ function applyStaticMarkup() {
     const personSections = slide.querySelectorAll(".person-section");
     personSections.forEach((section, index) => {
       const isSecondPerson = index === 1;
-      const labels = section.querySelectorAll(".field-label");
-      const nameLabel = labels[0];
-      const genderLabel = labels[1];
-      const birthLabel = labels[2];
-      const timeLabel = labels[3];
-      const cityLabel = labels[4];
       const quickFill = section.querySelector(".quick-fill-btn");
       const inputs = section.querySelectorAll(".person-input");
       const genderBtns = section.querySelectorAll(".gender-btn");
 
-      if (nameLabel) nameLabel.textContent = decodeMojibakeString(isSecondPerson && copy.nameB ? copy.nameB : copy.nameA);
-      if (genderLabel) genderLabel.textContent = "\u6027\u522b";
-      if (birthLabel) birthLabel.textContent = "\u751f\u65e5";
-      if (timeLabel) timeLabel.innerHTML = decodeMojibakeString('???? <span class="opt">(?????)</span>');
-      if (cityLabel) cityLabel.textContent = decodeMojibakeString(copy.cityA);
+      applyFieldLabels(section, {
+        ...copy,
+        nameA: decodeMojibakeString(copy.nameA),
+        nameB: decodeMojibakeString(copy.nameB || ""),
+        cityA: decodeMojibakeString(copy.cityA)
+      }, isSecondPerson);
       if (quickFill) quickFill.textContent = isSecondPerson ? "\u2728 \u4f53\u9a8c:snow" : "\u2728 \u4f53\u9a8c:dewey";
       if (inputs[0]) inputs[0].placeholder = "\u8bf7\u8f93\u5165\u540d\u5b57";
       if (genderBtns[0]) genderBtns[0].textContent = "\u5973\u751f \u2640";
@@ -1328,21 +1334,16 @@ function localizeStaticMarkup() {
     const personSections = slide.querySelectorAll(".person-section");
     personSections.forEach((section, index) => {
       const isSecondPerson = index === 1;
-      const labels = section.querySelectorAll(".field-label");
-      const nameLabel = labels[0];
-      const genderLabel = labels[1];
-      const birthLabel = labels[2];
-      const timeLabel = labels[3];
-      const cityLabel = labels[4];
       const quickFill = section.querySelector(".quick-fill-btn");
       const inputs = section.querySelectorAll(".person-input");
       const genderBtns = section.querySelectorAll(".gender-btn");
 
-      if (nameLabel) nameLabel.textContent = decodeMojibakeString(isSecondPerson && copy.nameB ? copy.nameB : copy.nameA);
-      if (genderLabel) genderLabel.textContent = "\u6027\u522b";
-      if (birthLabel) birthLabel.textContent = "\u751f\u65e5";
-      if (timeLabel) timeLabel.innerHTML = decodeMojibakeString('???? <span class="opt">(?????)</span>');
-      if (cityLabel) cityLabel.textContent = decodeMojibakeString(copy.cityA);
+      applyFieldLabels(section, {
+        ...copy,
+        nameA: decodeMojibakeString(copy.nameA),
+        nameB: decodeMojibakeString(copy.nameB || ""),
+        cityA: decodeMojibakeString(copy.cityA)
+      }, isSecondPerson);
       if (quickFill) quickFill.textContent = isSecondPerson ? "\u2728 \u4f53\u9a8c:snow" : "\u2728 \u4f53\u9a8c:dewey";
       if (inputs[0]) inputs[0].placeholder = "\u8bf7\u8f93\u5165\u540d\u5b57";
       if (genderBtns[0]) genderBtns[0].textContent = "\u5973\u751f \u2640";
