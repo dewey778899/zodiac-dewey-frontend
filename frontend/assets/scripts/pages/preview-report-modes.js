@@ -282,7 +282,8 @@ function applyThemeState() {
   const config = THEME_CONFIG[activeTheme];
   $("hero-tag").textContent = config.heroTag;
   $("hero-title").innerHTML = config.heroTitle;
-  $("hero-sub").textContent = config.heroSub;
+  const heroSub = $("hero-sub");
+  if (heroSub) heroSub.textContent = config.heroSub;
   $("flow-title").textContent = config.flowTitle;
   $("primary-title").textContent = config.primaryTitle;
   $("preview-btn").textContent = config.submitText;

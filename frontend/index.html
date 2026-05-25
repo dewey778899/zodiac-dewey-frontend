@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -6,26 +6,26 @@
 <meta name="format-detection" content="telephone=no">
 <title>灵魂合盘 · 你和 TA 的缘分密码 · 小登哥出品</title>
 
-<!-- 字体:思源宋体(报告主体)+ 玉ぴょん(标题装饰) -->
+<!-- 瀛椾綋:鎬濇簮瀹嬩綋(鎶ュ憡涓讳綋)+ 鐜夈伌銈囥倱(鏍囬瑁呴グ) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 
-<!-- jsPDF:生成 PDF(分享图用原生 Canvas) -->
+<!-- jsPDF:鐢熸垚 PDF(鍒嗕韩鍥剧敤鍘熺敓 Canvas) -->
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-<link rel="stylesheet" href="./assets/styles/pages/index.css">
+<link rel="stylesheet" href="./assets/styles/pages/index.css?v=10">
 </head>
 <body>
 
 
 
 <div class="bg-deco">
-  <div class="star" style="top: 15%; left: 8%; font-size: 14px;">✦</div>
-  <div class="star" style="top: 25%; right: 10%; font-size: 10px; animation-delay: 1s;">✧</div>
-  <div class="star" style="top: 60%; left: 12%; font-size: 12px; animation-delay: 2s;">✦</div>
-  <div class="star" style="top: 75%; right: 8%; font-size: 14px; animation-delay: 0.5s;">✧</div>
-  <div class="star" style="top: 40%; right: 15%; font-size: 10px; animation-delay: 1.5s;">✦</div>
+  <div class="star" style="top: 15%; left: 8%; font-size: 14px;">鉁?</div>
+  <div class="star" style="top: 25%; right: 10%; font-size: 10px; animation-delay: 1s;">鉁?</div>
+  <div class="star" style="top: 60%; left: 12%; font-size: 12px; animation-delay: 2s;">鉁?</div>
+  <div class="star" style="top: 75%; right: 8%; font-size: 14px; animation-delay: 0.5s;">鉁?</div>
+  <div class="star" style="top: 40%; right: 15%; font-size: 10px; animation-delay: 1.5s;">鉁?</div>
 </div>
 
 <div class="app">
@@ -35,14 +35,14 @@
     <div class="hero">
       <div class="hero-tag" id="hero-tag">SOULMATE · 灵魂合盘</div>
       <h1 class="hero-title" id="hero-title">你和 TA<br/>到底有多合</h1>
-      <div class="hero-deco">✦ ✧ ✦</div>
-      <div class="by-line">PRESENTED BY <span class="name">小登哥 ⋅ XIAODENG</span></div>
+      <div class="hero-deco">✦ ✦ ✦</div>
+      <div class="by-line">PRESENTED BY <span class="name">小登哥 · XIAODENG</span></div>
     </div>
 
     <div class="theme-nav-wrap">
       <div class="theme-nav" id="theme-nav">
         <button type="button" class="theme-tab active" data-theme="love">
-          <span class="theme-tab-icon">❤</span>
+          <span class="theme-tab-icon">♥</span>
           <span class="theme-tab-text">爱情</span>
         </button>
         <button type="button" class="theme-tab" data-theme="career">
@@ -55,7 +55,7 @@
         </button>
         <div class="theme-tab-indicator" id="theme-tab-indicator"></div>
       </div>
-      <div class="theme-hint" id="theme-hint">左右滑动切换不同测算主题</div>
+      <div class="theme-hint" id="theme-hint">左右滑动切换不同主题</div>
     </div>
 
     <div class="form-slider-shell">
@@ -65,7 +65,7 @@
             <div class="slide-head">
               <div class="slide-tag">LOVE REPORT</div>
               <div class="slide-title">爱情合盘</div>
-              <div class="slide-sub">保留双人输入，重点解析吸引力、矛盾点和相处节奏。</div>
+              <div class="slide-sub">保留双人输入，重点看吸引力、冲突点和相处节奏。</div>
             </div>
 
             <div class="model-switcher slide-model-switcher">
@@ -76,10 +76,7 @@
             <div class="person-section">
               <div class="field">
                 <label class="field-label">你的名字(昵称)</label>
-                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20">
-                <div class="quick-fill">
-                  <button type="button" class="quick-fill-btn" data-demo="dewey">🎯 体验:dewey</button>
-                </div>
+                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20" autocomplete="off" spellcheck="false">
               </div>
               <div class="field">
                 <label class="field-label">性别</label>
@@ -110,6 +107,9 @@
                     <select class="input city-select person-select" data-person="a" data-field="birthCity">
                       <option value="">市</option>
                     </select>
+                    <select class="input city-select person-select" data-person="a" data-field="birthDistrict">
+                      <option value="">区/县</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -118,10 +118,7 @@
             <div class="person-section">
               <div class="field">
                 <label class="field-label">TA的名字(昵称)</label>
-                <input class="input person-input" data-person="b" data-field="name" placeholder="请输入名字" maxlength="20">
-                <div class="quick-fill">
-                  <button type="button" class="quick-fill-btn" data-demo="snow">🎯 体验:snow</button>
-                </div>
+                <input class="input person-input" data-person="b" data-field="name" placeholder="请输入名字" maxlength="20" autocomplete="off" spellcheck="false">
               </div>
               <div class="field">
                 <label class="field-label">性别</label>
@@ -152,6 +149,9 @@
                     <select class="input city-select person-select" data-person="b" data-field="birthCity">
                       <option value="">市</option>
                     </select>
+                    <select class="input city-select person-select" data-person="b" data-field="birthDistrict">
+                      <option value="">区/县</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -174,7 +174,7 @@
             <div class="person-section">
               <div class="field">
                 <label class="field-label">名字(昵称)</label>
-                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20">
+                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20" autocomplete="off" spellcheck="false">
               </div>
               <div class="field">
                 <label class="field-label">性别</label>
@@ -191,20 +191,24 @@
                   <select class="input date-select person-select" data-person="a" data-field="birthDay"></select>
                 </div>
               </div>
-              <div class="field time-city-row">
-              <div class="field time-field">
-                <label class="field-label">出生时间 <span class="opt">(算月亮上升)</span></label>
-                <input class="input person-input" data-person="a" data-field="birthTime" type="time" value="12:30">
-              </div>
-              <div class="field city-field">
-                <label class="field-label">出生城市</label>
-                <div class="city-select-group">
-                  <select class="input city-select person-select" data-person="a" data-field="birthProvince">
-                    <option value="">省</option>
-                  </select>
-                  <select class="input city-select person-select" data-person="a" data-field="birthCity">
-                    <option value="">市</option>
-                  </select>
+              <div class="field time-city-row single-theme-location-row">
+                <div class="field time-field">
+                  <label class="field-label">出生时间 <span class="opt">(算月亮上升)</span></label>
+                  <input class="input person-input" data-person="a" data-field="birthTime" type="time" value="12:30">
+                </div>
+                <div class="field city-field">
+                  <label class="field-label">出生城市 / 区县</label>
+                  <div class="city-select-group">
+                    <select class="input city-select person-select" data-person="a" data-field="birthProvince">
+                      <option value="">省</option>
+                    </select>
+                    <select class="input city-select person-select" data-person="a" data-field="birthCity">
+                      <option value="">市</option>
+                    </select>
+                    <select class="input city-select person-select" data-person="a" data-field="birthDistrict">
+                      <option value="">区/县</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,7 +231,7 @@
             <div class="person-section">
               <div class="field">
                 <label class="field-label">名字(昵称)</label>
-                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20">
+                <input class="input person-input" data-person="a" data-field="name" placeholder="请输入名字" maxlength="20" autocomplete="off" spellcheck="false">
               </div>
               <div class="field">
                 <label class="field-label">性别</label>
@@ -244,19 +248,22 @@
                   <select class="input date-select person-select" data-person="a" data-field="birthDay"></select>
                 </div>
               </div>
-              <div class="field time-city-row">
+              <div class="field time-city-row single-theme-location-row">
                 <div class="field time-field">
                   <label class="field-label">出生时间 <span class="opt">(算月亮上升)</span></label>
                   <input class="input person-input" data-person="a" data-field="birthTime" type="time" value="12:30">
                 </div>
                 <div class="field city-field">
-                  <label class="field-label">出生城市</label>
+                  <label class="field-label">出生城市 / 区县</label>
                   <div class="city-select-group">
                     <select class="input city-select person-select" data-person="a" data-field="birthProvince">
                       <option value="">省</option>
                     </select>
                     <select class="input city-select person-select" data-person="a" data-field="birthCity">
                       <option value="">市</option>
+                    </select>
+                    <select class="input city-select person-select" data-person="a" data-field="birthDistrict">
+                      <option value="">区/县</option>
                     </select>
                   </div>
                 </div>
@@ -294,7 +301,7 @@
   <!-- ============== Page 3: Report ============== -->
   <div id="page-report" class="page hidden">
     <div id="report-content">
-      <!-- 报告封面 -->
+      <!-- 鎶ュ憡灏侀潰 -->
       <div class="cover" id="cover">
         <div class="cover-corner tl"></div>
         <div class="cover-corner tr"></div>
@@ -338,17 +345,17 @@
         <div class="cover-meta">
           <div class="cover-meta-id" id="cover-id">珍藏编号 · SASC-000000-PF4E</div>
           <div class="cover-meta-date" id="cover-date">— · — · —</div>
-          <div class="cover-by">CREATED BY <span class="name">小登哥 ⋅ XIAODENG</span></div>
+          <div class="cover-by">CREATED BY <span class="name">小登哥 · XIAODENG</span></div>
         </div>
       </div>
 
-      <!-- 章节 -->
-      <!-- 三大星座详情(太阳/月亮/上升) -->
+      <!-- 绔犺妭 -->
+      <!-- 涓夊ぇ鏄熷骇璇︽儏(澶槼/鏈堜寒/涓婂崌) -->
       <div class="zodiac-details" id="zodiac-details"></div>
 
       <div id="chapters-container"></div>
 
-      <!-- 精华相处建议 -->
+      <!-- 绮惧崕鐩稿寤鸿 -->
       <div class="essence" id="essence-section">
         <div class="essence-head">
           <div class="essence-head-icon">💎</div>
@@ -359,7 +366,7 @@
       </div>
     </div>
 
-    <!-- 操作栏 -->
+    <!-- 鎿嶄綔鏍?-->
     <div class="action-bar">
       <div class="action-bar-title">— KEEP IT FOREVER —</div>
       <div class="action-bar-sub">珍藏报告，或直接分享给 TA</div>
@@ -374,10 +381,10 @@
         </button>
       </div>
       <button class="restart-btn-full" id="copy-link-btn" style="border-style:solid;color:var(--lilac-deep);">🔗 分享给TA</button>
-      <button class="restart-btn-full" id="restart-btn">和TA再测一次</button>
+      <button class="restart-btn-full" id="restart-btn">和 TA 再测一次</button>
     </div>
 
-    <div class="report-footer">
+      <div class="report-footer">
       <div class="note">这份报告专属于你们 · 仅供参考</div>
       <div class="note">愿你被爱,也勇敢去爱 💕</div>
       <div class="by">CREATED BY <span class="name">小登哥 ⋅ XIAODENG</span></div>
@@ -388,9 +395,9 @@
 <!-- Share Modal -->
 <div class="modal-overlay hidden" id="share-modal">
   <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">分享你们的合盘卡片</div>
-      <div class="modal-sub">长按图片可保存到相册</div>
+      <div class="modal-head">
+        <div class="modal-title">分享你们的合盘卡片</div>
+        <div class="modal-sub">长按图片可保存到相册</div>
     </div>
     <div class="modal-body">
       <div class="share-card-preview" id="share-preview"></div>
@@ -530,6 +537,8 @@
   </div>
 </div>
 
-<script type="module" src="./assets/scripts/pages/index.js?v=4"></script>
+<script type="module" src="./assets/scripts/pages/index.js?v=10"></script>
 </body>
 </html>
+
+
