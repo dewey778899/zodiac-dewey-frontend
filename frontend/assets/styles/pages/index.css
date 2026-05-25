@@ -1,4 +1,4 @@
-﻿*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
     font-family: "Noto Serif SC", "Songti SC", "Source Han Serif SC", -apple-system, BlinkMacSystemFont, "PingFang SC", serif;
@@ -157,6 +157,10 @@
     flex: 0 0 100%;
     min-width: 100%;
   }
+  .form-slide[data-theme="career"],
+  .form-slide[data-theme="wealth"] {
+    min-height: 480px;
+  }
   .slide-card {
     margin-bottom: 0;
   }
@@ -250,16 +254,34 @@
   }
 
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .birth-place-row {
-    grid-template-columns: minmax(104px, 122px) minmax(0, 1fr);
+  .time-city-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
     align-items: end;
   }
   .time-field .input[type="time"] {
     padding-left: 8px;
     padding-right: 8px;
     font-size: 13px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .city-field { min-width: 0; }
+  .city-field .input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .city-select-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .city-select {
+    text-align: center;
+    padding: 12px 6px;
+    font-size: 13px;
+  }
 
   .date-select-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
   .date-select { text-align: center; padding: 12px 6px; font-size: 15px; }

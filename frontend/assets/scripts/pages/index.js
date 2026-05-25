@@ -509,8 +509,8 @@ const REPORT_THEMES = {
     heroTag: "CAREER ASTROLOGY · 事业测算",
     heroTitle: "你的事业节奏<br/>该怎么发力",
     hint: "左右滑动切换爱情、事业、财运",
-    submitText: "✨ 生成事业测算",
-    loadingTitle: "正在生成你的事业测算",
+    submitText: "✨ 生成事业测算报告",
+    loadingTitle: "正在生成你的事业测算报告",
     loadingSub: "会先整理你的个人星盘，再推演职业驱动力、岗位建议和未来 90 天发力点。",
     coverEmblem: "CAREER ASTROLOGY",
     coverTitleCn: "事业测算",
@@ -540,8 +540,8 @@ const REPORT_THEMES = {
     heroTag: "WEALTH MAP · 财运测算",
     heroTitle: "你的财运结构<br/>适合怎么走",
     hint: "左右滑动切换爱情、事业、财运",
-    submitText: "✨ 生成财运测算",
-    loadingTitle: "正在生成你的财运测算",
+    submitText: "✨ 生成财运测算报告",
+    loadingTitle: "正在生成你的财运测算报告",
     loadingSub: "会先整理你的个人星盘，再推演赚钱方式、守财节奏和未来 90 天的财务窗口。",
     coverEmblem: "WEALTH PATTERN",
     coverTitleCn: "财运测算",
@@ -916,6 +916,7 @@ function confirmCityPicker() {
 
 function initCityPicker() {
   populateCityPickerProvinces();
+  initInlineCitySelects();
 
   $("city-picker-province")?.addEventListener("change", (event) => {
     cityPickerState.draft.province = event.target.value;
@@ -952,6 +953,32 @@ function initCityPicker() {
   document.querySelectorAll(".city-picker-trigger").forEach((button) => {
     button.addEventListener("click", () => {
       openCityPicker(button.dataset.person === "a" ? "personA" : "personB");
+    });
+  });
+}
+
+function initInlineCitySelects() {
+  document.querySelectorAll(".city-select[data-field='birthProvince']").forEach((select) => {
+    if (select.options.length <= 1) {
+      Object.keys(CITY_DATA).sort().forEach((province) => {
+        select.appendChild(new Option(province, province));
+      });
+    }
+  });
+
+  document.querySelectorAll(".city-select[data-field='birthProvince']").forEach((select) => {
+    select.addEventListener("change", (event) => {
+      const person = event.target.dataset.person;
+      const citySelect = document.querySelector(`.city-select[data-field='birthCity'][data-person='${person}']`);
+      if (citySelect) {
+        citySelect.innerHTML = '<option value="">市</option>';
+        const province = event.target.value;
+        if (province && CITY_DATA[province]) {
+          Object.keys(CITY_DATA[province]).sort().forEach((city) => {
+            citySelect.appendChild(new Option(city, city));
+          });
+        }
+      });
     });
   });
 }
@@ -1430,7 +1457,7 @@ function initModelUi() {
   document.querySelectorAll(".model-option").forEach((button) => {
     button.addEventListener("click", () => {
       const targetModel = button.dataset.model;
-      if (targetModel === "claude" && !hasClaudeAccess()) {
+      if (targetModel === "claude") {
         showValueModal();
         return;
       }
