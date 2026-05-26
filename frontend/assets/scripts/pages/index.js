@@ -69,7 +69,7 @@ const DEFAULT_STATE = {
 };
 
 let activeTheme = "love";
-let activeModel = "claude";
+let activeModel = "deepseek";
 let activePayMethod = "wechat";
 let cityIndex = new Map();
 let currentLoadingTimer = null;
@@ -326,6 +326,12 @@ function setModel(model) {
   renderThemeUI(activeTheme);
 }
 
+function promptDeepAnalysisPayment() {
+  setModel("claude");
+  closeModal("value-modal");
+  openModal("pay-modal");
+}
+
 function getPayMethodCopy(method) {
   return method === "alipay"
     ? {
@@ -467,6 +473,7 @@ function validateThemeState(theme) {
     if (!personB.name.trim()) return "请填写 TA 的名字";
     if (!personB.birthDate) return "请填写 TA 的生日";
     if (!personB.birthProvince || !personB.birthCity || !personB.birthDistrict) return "请完整选择 TA 的出生省市区";
+    if (personA.gender === personB.gender) return "爱情合盘暂不支持同一性别，请选择一男一女";
   }
   return "";
 }
@@ -592,6 +599,11 @@ async function submitForm() {
     return;
   }
 
+  if (activeModel === "claude") {
+    openModal("pay-modal");
+    return;
+  }
+
   const request = {
     personA: buildPersonPayload(activeTheme, "a"),
     model: activeModel,
@@ -695,11 +707,7 @@ function bindFormEvents() {
   $("pdf-btn")?.addEventListener("click", () => showToast("PDF 导出稍后接入"));
 
   $("value-modal-close")?.addEventListener("click", () => closeModal("value-modal"));
-  $("value-modal-pay-btn")?.addEventListener("click", () => {
-    setModel("claude");
-    closeModal("value-modal");
-    openModal("pay-modal");
-  });
+  $("value-modal-pay-btn")?.addEventListener("click", promptDeepAnalysisPayment);
   $("value-modal-free-btn")?.addEventListener("click", () => {
     setModel("deepseek");
     closeModal("value-modal");
