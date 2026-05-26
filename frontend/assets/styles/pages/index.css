@@ -335,6 +335,29 @@
   .uniform-location-row .district-field .city-select {
     text-align: center;
   }
+  .uniform-location-row .city-field .city-select {
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    border-color: rgba(255, 181, 167, 0.45);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 8px 18px rgba(255, 139, 122, 0.08);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .uniform-location-row .city-field .city-select.is-selected {
+    border-color: var(--peach-deep);
+    box-shadow: 0 0 0 3px rgba(255, 181, 167, 0.18);
+  }
+  .uniform-location-row .city-field .city-select:focus {
+    box-shadow: 0 0 0 4px rgba(255, 181, 167, 0.18);
+  }
+  .uniform-location-row .time-field .input[type="time"] {
+    min-height: 46px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.92);
+  }
 
   @media (max-width: 520px) {
     .uniform-location-row {
@@ -349,6 +372,11 @@
       font-size: 11px;
       padding-left: 6px;
       padding-right: 6px;
+    }
+    .uniform-location-row .city-field .city-select,
+    .uniform-location-row .time-field .input[type="time"] {
+      min-height: 42px;
+      border-radius: 14px;
     }
   }
 
