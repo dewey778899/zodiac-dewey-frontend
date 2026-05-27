@@ -715,7 +715,7 @@ function bindFormEvents() {
 
   $("pay-modal-close")?.addEventListener("click", () => closeModal("pay-modal"));
   $("pay-open-btn")?.addEventListener("click", () => showToast(activePayMethod === "alipay" ? "请用支付宝扫码支付" : "请用微信扫码支付"));
-  $("pay-confirm-btn")?.addEventListener("click", () => showToast("支付确认流程稍后接入"));
+  $("pay-confirm-btn")?.addEventListener("click", () => { closeModal("pay-modal"); showToast("支付确认流程稍后接入"); });
 
   $("city-picker-close")?.addEventListener("click", () => closeModal("city-picker-modal"));
   $("city-picker-clear")?.addEventListener("click", () => closeModal("city-picker-modal"));
