@@ -49,10 +49,10 @@ const THEME_COPY = {
 };
 
 const LOADING_STEPS = [
-  "正在校验出生信息",
-  "正在计算星盘结构",
-  "正在调用 AI 生成解读",
-  "正在整理最终报告"
+  "\u6821\u5bf9\u51fa\u751f\u4fe1\u606f",
+  "\u751f\u6210\u661f\u76d8\u7ed3\u6784",
+  "\u89e3\u6790\u5173\u7cfb\u80fd\u91cf",
+  "\u6574\u7406\u6700\u7ec8\u62a5\u544a"
 ];
 
 const DEFAULT_STATE = {
@@ -410,12 +410,18 @@ function renderLoadingSteps(activeIndex) {
   if (!container) return;
   container.innerHTML = LOADING_STEPS.map((step, index) => {
     const state = index < activeIndex ? "completed" : index === activeIndex ? "active" : "pending";
+    const stateText =
+      state === "completed"
+        ? "\u5df2\u5b8c\u6210"
+        : state === "active"
+          ? "\u6b63\u5728\u5904\u7406\u4e2d..."
+          : "\u7b49\u5f85\u6267\u884c";
     return `
       <div class="loading-step ${state}">
         <div class="loading-step-status">${String(index + 1).padStart(2, "0")}</div>
         <div class="loading-step-copy">
           <div class="loading-step-title">${escapeHtml(step)}</div>
-          <div class="loading-step-sub">${state === "completed" ? "已完成" : state === "active" ? "正在处理..." : "等待中"}</div>
+          <div class="loading-step-sub">${stateText}</div>
         </div>
       </div>
     `;
@@ -433,7 +439,7 @@ function startLoadingAnimation() {
   stopLoadingAnimation(0);
   let step = 0;
   renderLoadingSteps(step);
-  setLoadingProgress(0, "准备开始...");
+  setLoadingProgress(0, "\u51c6\u5907\u5f00\u59cb...");
   currentLoadingTimer = window.setInterval(() => {
     const next = Math.min(currentProgress + 8, 92);
     if (next >= (step + 1) * 23 && step < LOADING_STEPS.length - 1) {
@@ -449,9 +455,11 @@ function stopLoadingAnimation(finalProgress) {
     clearInterval(currentLoadingTimer);
     currentLoadingTimer = null;
   }
-  setLoadingProgress(finalProgress, finalProgress >= 100 ? "已完成" : "处理中...");
+  setLoadingProgress(
+    finalProgress,
+    finalProgress >= 100 ? "\u5df2\u5b8c\u6210" : "\u5904\u7406\u4e2d..."
+  );
 }
-
 function buildPersonPayload(theme, personKey) {
   const person = getThemeState(theme, personKey);
   return {

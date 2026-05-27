@@ -432,14 +432,15 @@
     position: relative;
     max-width: 430px;
     margin: 0 auto;
-    padding: 30px 22px 24px;
-    border-radius: 28px;
+    padding: 26px 20px 20px;
+    border-radius: 30px;
     background:
-      radial-gradient(circle at top right, rgba(255,181,167,0.28), transparent 34%),
-      linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,248,252,0.9));
-    border: 1px solid rgba(255,255,255,0.82);
-    box-shadow: var(--shadow-deep);
-    backdrop-filter: blur(18px);
+      radial-gradient(circle at top right, rgba(255,181,167,0.24), transparent 32%),
+      radial-gradient(circle at bottom left, rgba(155,127,199,0.12), transparent 32%),
+      linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,249,252,0.92));
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 24px 60px rgba(116, 87, 128, 0.16);
+    backdrop-filter: blur(20px);
     overflow: hidden;
   }
   .loading-card::before {
@@ -453,52 +454,58 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 12px;
-    margin-bottom: 14px;
+    padding: 8px 14px;
+    margin-bottom: 16px;
     border-radius: 999px;
-    background: rgba(255,255,255,0.74);
-    border: 1px solid rgba(255,181,167,0.38);
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(255,181,167,0.34);
     color: var(--peach-deep);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
   }
   .loading-title {
-    font-size: 24px;
+    font-size: 21px;
     font-weight: 800;
     color: var(--ink);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     font-family: "Noto Serif SC", serif;
+    line-height: 1.35;
   }
   .loading-sub {
+    max-width: 340px;
     font-size: 13px;
     color: var(--ink-light);
-    line-height: 1.8;
-    margin-bottom: 22px;
+    line-height: 1.75;
+    margin-bottom: 18px;
   }
   .loading-progress-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .loading-progress-label {
-    font-size: 13px;
-    color: var(--ink);
-    font-weight: 700;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    letter-spacing: 0.4px;
   }
   .loading-progress-value {
-    font-size: 16px;
+    font-size: 28px;
+    line-height: 1;
     font-weight: 800;
     color: var(--peach-deep);
+    font-family: "Cormorant Garamond", serif;
   }
   .loading-progress-track {
-    height: 12px;
+    height: 10px;
     border-radius: 999px;
-    background: rgba(155,127,199,0.14);
+    background: linear-gradient(90deg, rgba(255,255,255,0.92), rgba(155,127,199,0.12));
     overflow: hidden;
-    box-shadow: inset 0 1px 3px rgba(120,91,163,0.08);
+    box-shadow: inset 0 1px 4px rgba(120,91,163,0.08);
   }
   .loading-progress-fill {
     height: 100%;
@@ -509,47 +516,51 @@
     transition: width 0.45s ease;
   }
   .loading-steps {
-    margin-top: 18px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     text-align: left;
   }
   .loading-step {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    padding: 14px;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.62);
-    border: 1px solid rgba(155,127,199,0.12);
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    padding: 12px 13px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.58);
+    border: 1px solid rgba(155,127,199,0.1);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, opacity 0.25s ease;
   }
-  .loading-step.pending { opacity: 0.82; }
+  .loading-step.pending {
+    opacity: 0.72;
+    background: rgba(255,255,255,0.44);
+  }
   .loading-step.active {
-    background: linear-gradient(135deg, rgba(255,245,240,0.96), rgba(244,232,250,0.96));
-    border-color: rgba(255,181,167,0.42);
-    box-shadow: 0 12px 24px rgba(155,127,199,0.12);
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, rgba(255,244,238,0.98), rgba(247,237,252,0.98));
+    border-color: rgba(255,181,167,0.5);
+    box-shadow: 0 14px 28px rgba(155,127,199,0.14);
+    transform: translateY(-2px) scale(1.01);
     opacity: 1;
   }
   .loading-step.completed {
-    background: linear-gradient(135deg, rgba(241,252,245,0.98), rgba(250,255,251,0.96));
-    border-color: rgba(91,193,128,0.26);
+    background: linear-gradient(135deg, rgba(243,252,246,0.98), rgba(251,255,252,0.96));
+    border-color: rgba(91,193,128,0.22);
     opacity: 1;
   }
   .loading-step-status {
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     flex: none;
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: rgba(155,127,199,0.12);
-    color: var(--lilac-deep);
-    font-size: 13px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(232,223,243,0.95));
+    color: var(--ink-soft);
+    font-size: 12px;
     font-weight: 800;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    box-shadow: inset 0 0 0 1px rgba(155,127,199,0.1);
   }
   .loading-step.active .loading-step-status {
     background: linear-gradient(135deg, #ff8b7a, #9b7fc7);
@@ -566,12 +577,44 @@
     font-size: 14px;
     font-weight: 700;
     color: var(--ink);
-    margin-bottom: 4px;
+    margin-bottom: 3px;
+    line-height: 1.45;
   }
   .loading-step-sub {
     font-size: 12px;
-    line-height: 1.65;
+    line-height: 1.55;
     color: var(--ink-light);
+  }
+
+  @media (max-width: 640px) {
+    .loading-card {
+      padding: 22px 16px 16px;
+      border-radius: 24px;
+    }
+    .loading-title {
+      font-size: 19px;
+    }
+    .loading-sub {
+      font-size: 12.5px;
+      margin-bottom: 16px;
+    }
+    .loading-progress-value {
+      font-size: 24px;
+    }
+    .loading-step {
+      padding: 11px 12px;
+      gap: 10px;
+    }
+    .loading-step-status {
+      width: 34px;
+      height: 34px;
+    }
+    .loading-step-title {
+      font-size: 13.5px;
+    }
+    .loading-step-sub {
+      font-size: 11.5px;
+    }
   }
 
   /* ============ Report COVER (珍藏感升级核心) ============ */
