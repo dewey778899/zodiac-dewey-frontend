@@ -336,14 +336,14 @@ function getPayMethodCopy(method) {
   return method === "alipay"
     ? {
         image: "img/alipay_qr.jpg",
-        buttonText: "打开支付宝支付",
-        hint: "默认金额 19.9 元，可使用支付宝扫码支付到当前收款码。",
+        buttonText: "用另一个手机支付宝扫码",
+        hint: "19.9 元，调用anthropic顶级大模型4.7很贵，但是可以知道你想知道的",
         alt: "支付宝支付二维码"
       }
     : {
         image: "img/wechat_qr.jpg",
-        buttonText: "打开微信支付",
-        hint: "默认金额 19.9 元，可使用微信扫码支付到当前收款码。",
+        buttonText: "用另一个手机微信扫码",
+        hint: "19.9 元，调用anthropic顶级大模型4.7很贵，但是可以知道你想知道的",
         alt: "微信支付二维码"
       };
 }
