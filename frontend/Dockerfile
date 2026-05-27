@@ -2,7 +2,11 @@ FROM nginx:alpine
 LABEL maintainer="dwaigx"
 LABEL description="小登哥的灵魂合盘 - 前端静态页面"
 
+ARG APP_VERSION=dev
+
 COPY . /usr/share/nginx/html
+
+RUN find /usr/share/nginx/html -name "*.html" -exec sed -i -E "s/(index\\.css\\?v=)[^\"' ]+/\\1${APP_VERSION}/g; s/(index\\.js\\?v=)[^\"' ]+/\\1${APP_VERSION}/g" {} +
 
 # Nginx config: SPA + API proxy
 RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
@@ -11,6 +15,29 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+
+    location = / {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        expires -1;
+        try_files /index.html =404;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        expires -1;
+    }
+
+    location /assets/ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable" always;
+        try_files $uri =404;
+    }
+
+    location /img/ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable" always;
+        try_files $uri =404;
+    }
 
     location / {
         try_files $uri $uri/ /index.html;

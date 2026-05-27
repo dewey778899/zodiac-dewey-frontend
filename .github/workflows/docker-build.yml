@@ -1,4 +1,4 @@
-name: Build & Push Frontend Image
+name: Build, Push & Deploy Frontend
 
 on:
   push:
@@ -12,6 +12,7 @@ env:
   REGISTRY: registry.cn-shanghai.aliyuncs.com
   NAMESPACE: dewey_zodiac
   IMAGE: zodiac-dewey-frontend
+  DEPLOY_PATH: /opt/zodiac
 
 jobs:
   build-and-push:
@@ -36,8 +37,40 @@ jobs:
         with:
           context: ./frontend
           push: true
+          build-args: |
+            APP_VERSION=${{ github.sha }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.IMAGE }}:latest
             ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Deploy frontend to ECS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          port: ${{ secrets.ECS_PORT }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_PATH }}
+
+            echo "${{ secrets.ACR_PASSWORD }}" | docker login -u "${{ secrets.ACR_USERNAME }}" --password-stdin ${{ env.REGISTRY }} 2>/dev/null || true
+
+            docker compose pull frontend
+            docker compose up -d --force-recreate frontend
+            docker compose ps frontend
+
+            for i in $(seq 1 20); do
+              if curl -fsSI http://127.0.0.1/ >/dev/null && curl -fsS http://127.0.0.1/ | grep -q "index.js?v=${{ github.sha }}"; then
+                break
+              fi
+              if [ "$i" -eq 20 ]; then
+                echo "Frontend deployment verification failed"
+                exit 1
+              fi
+              sleep 3
+            done
+
+            docker image prune -f
