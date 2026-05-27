@@ -29,7 +29,7 @@ const THEME_COPY = {
   career: {
     heroTag: "CAREER ASTROLOGY · 事业解读",
     heroTitle: "你的事业节奏<br>该怎么发力",
-    submitText: "预览事业报告",
+    submitText: "生成事业报告",
     slideTitle: "事业测算",
     slideSub: "重点看职业驱动力、岗位匹配和未来节奏。",
     coverTitleCn: "事业洞察",
@@ -39,7 +39,7 @@ const THEME_COPY = {
   wealth: {
     heroTag: "WEALTH MAP · 财运洞察",
     heroTitle: "你的财富结构<br>适合怎么走",
-    submitText: "预览财运报告",
+    submitText: "生成财运报告",
     slideTitle: "财运测算",
     slideSub: "重点看赚钱方式、守财节奏和副业机会。",
     coverTitleCn: "财运洞察",
@@ -268,7 +268,13 @@ function renderThemeUI(theme) {
   $("hero-tag").textContent = copy.heroTag;
   $("hero-title").innerHTML = copy.heroTitle;
   $("submit-btn").textContent = copy.submitText;
-  $("theme-hint").textContent = theme === "love" ? "左右滑动切换不同主题" : "点击上方按钮切换到其他主题";
+  $("theme-hint").textContent = theme === "love" ? "???????????????" : "????????????????????";
+  if ($("action-bar-sub")) $("action-bar-sub").textContent = theme === "love" ? "??????????? TA" : "?????????????";
+  if ($("copy-link-btn")) $("copy-link-btn").textContent = theme === "love" ? "?? ???TA" : "?? ??????";
+  if ($("restart-btn")) $("restart-btn").textContent = theme === "love" ? "? TA ????" : "??????";
+  if ($("report-note-primary")) $("report-note-primary").textContent = theme === "love" ? "????????? ? ????" : "???????? ? ????";
+  if ($("report-note-secondary")) $("report-note-secondary").textContent = theme === "love" ? "????,????? ??" : "???????????????? ?";
+  if ($("share-modal-title")) $("share-modal-title").textContent = theme === "love" ? "?????????" : "????????";
 
   document.querySelectorAll(".theme-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.theme === theme);
@@ -281,36 +287,7 @@ function renderThemeUI(theme) {
     const slideTheme = el.closest(".form-slide")?.dataset.theme;
     if (slideTheme && THEME_COPY[slideTheme]) el.textContent = THEME_COPY[slideTheme].slideSub;
   });
-  document.querySelectorAll(".model-option").forEach((button) => {
-    button.classList.toggle("active", button.dataset.model === activeModel);
-    button.innerHTML = button.dataset.model === "deepseek"
-      ? '免费版<span class="model-badge">· 基础解析</span>'
-      : '深度解析<span class="model-badge">· Opus 4.7</span>';
-  });
 }
-
-function adjustThemeIndicator() {
-  const indicator = $("theme-tab-indicator");
-  const nav = $("theme-nav");
-  const activeButton = document.querySelector(`.theme-tab[data-theme="${activeTheme}"]`);
-  if (!indicator || !nav || !activeButton) return;
-  const navRect = nav.getBoundingClientRect();
-  const buttonRect = activeButton.getBoundingClientRect();
-  indicator.style.left = `${buttonRect.left - navRect.left}px`;
-  indicator.style.width = `${buttonRect.width}px`;
-}
-
-function adjustSliderPosition() {
-  const slides = $("form-slides");
-  if (slides) slides.style.transform = `translateX(-${THEME_SLIDES[activeTheme] * 100}%)`;
-}
-
-function adjustSliderHeight() {
-  const shell = document.querySelector(".form-slider-shell");
-  const slide = getThemeSlide(activeTheme);
-  if (shell && slide) shell.style.height = `${slide.offsetHeight}px`;
-}
-
 function renderTheme(theme) {
   activeTheme = THEME_COPY[theme] ? theme : "love";
   renderThemeUI(activeTheme);
