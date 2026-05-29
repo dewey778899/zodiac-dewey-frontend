@@ -528,17 +528,17 @@ function renderPaymentModal(order) {
   if (paymentState.channel === "wechat") {
     if (payload.mode === "JSAPI") {
       openBtn.textContent = "打开微信支付";
-      hint.textContent = "当前处于微信内，将使用微信官方支付拉起。";
+      hint.textContent = payload.mock ? "当前为本地模拟微信支付，可先点击按钮，再用后台补单完成测试。" : "当前处于微信内，将使用微信官方支付拉起。";
       qrTitle.textContent = "微信内支付无需二维码";
       setPayStatus("订单已创建，请点击按钮拉起微信支付");
     } else if (payload.mode === "H5") {
       openBtn.textContent = "打开微信支付";
-      hint.textContent = "当前为手机浏览器，将跳转微信 H5 支付。";
+      hint.textContent = payload.mock ? "当前为本地模拟微信 H5 支付，可跳转后再用后台补单完成测试。" : "当前为手机浏览器，将跳转微信 H5 支付。";
       qrTitle.textContent = "如果无法跳转，也可在电脑上使用二维码兜底";
       setPayStatus("订单已创建，请点击按钮前往微信支付");
     } else {
       openBtn.textContent = "刷新微信支付二维码";
-      hint.textContent = "当前环境使用微信 Native 二维码支付。";
+      hint.textContent = payload.mock ? "当前为本地模拟微信二维码支付，可扫码占位后再用后台补单完成测试。" : "当前环境使用微信 Native 二维码支付。";
       qrTitle.textContent = "请使用微信扫码支付";
       if (payload.codeUrl) {
         setPayQrImage(`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payload.codeUrl)}`);
@@ -547,7 +547,7 @@ function renderPaymentModal(order) {
     }
   } else {
     openBtn.textContent = "打开支付宝支付";
-    hint.textContent = "将通过支付宝 WAP 官方支付链路完成付款。";
+    hint.textContent = payload.mock ? "当前为本地模拟支付宝支付，可打开后再用后台补单完成测试。" : "将通过支付宝 WAP 官方支付链路完成付款。";
     qrTitle.textContent = "手机可直接打开支付宝，电脑端可用下方二维码兜底";
     if (payload.payUrl) {
       setPayQrImage(`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payload.payUrl)}`);
