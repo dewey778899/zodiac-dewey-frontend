@@ -87,6 +87,7 @@ let activeTheme = "love";
 let activeModel = "deepseek";
 let activePayMethod = "wechat";
 let cityIndex = new Map();
+let cityCoordinateData = {};
 let currentLoadingTimer = null;
 let currentProgress = 0;
 let latestReport = null;
@@ -432,7 +433,7 @@ function normalizeName(value, fallback) {
 
 function resolveCoords(person) {
   const key = composeBirthPlace(person).trim();
-  const item = key ? cityIndex.get?.(key) : null;
+  const item = key ? cityCoordinateData[key] : null;
   return item ? { lat: item.lat, lng: item.lng } : null;
 }
 
@@ -654,6 +655,11 @@ function zodiacText(info) {
   return [info.sun, info.moon, info.rising].filter(Boolean).join(" · ");
 }
 
+function formatTriplet(info) {
+  if (!info) return "太阳 —｜月亮 —｜上升 —";
+  return `太阳 ${info.sun || "—"}｜月亮 ${info.moon || "—"}｜上升 ${info.rising || "—"}`;
+}
+
 function chapterEmoji(index) {
   return String(index + 1).padStart(2, "0");
 }
@@ -688,8 +694,8 @@ function renderReport(response) {
       <div class="chapter-title">星盘重点</div>
     </div>
     <div class="chapter-body">
-      <strong>${escapeHtml(response.personA?.name || "你")}</strong>：${escapeHtml(zodiacText(response.zodiacA))}<br>
-      ${isLove ? `<strong>${escapeHtml(response.personB?.name || "TA")}</strong>：${escapeHtml(zodiacText(response.zodiacB))}` : ""}
+      <strong>${escapeHtml(response.personA?.name || "你")}</strong>：${escapeHtml(formatTriplet(response.zodiacA))}
+      ${isLove ? `<br><strong>${escapeHtml(response.personB?.name || "TA")}</strong>：${escapeHtml(formatTriplet(response.zodiacB))}` : ""}
     </div>
   `;
 
@@ -887,11 +893,8 @@ function bindFormEvents() {
 async function loadCityData() {
   const response = await fetch(CITY_DATA_URL);
   if (!response.ok) throw new Error("无法加载省市区数据");
-  const raw = await response.json();
-  cityIndex = buildCityIndex(raw);
-  cityIndex.get = function getValue(key) {
-    return raw[key];
-  };
+  cityCoordinateData = await response.json();
+  cityIndex = buildCityIndex(cityCoordinateData);
 }
 
 async function init() {
