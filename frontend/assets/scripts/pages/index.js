@@ -14,6 +14,9 @@ const YEARS = { start: 1975, end: 2005 };
 const DEFAULT_BIRTH_DATE = { year: "1990", month: "06", day: "15" };
 const THEMES = ["love", "career", "wealth"];
 const THEME_SLIDES = { love: 0, career: 1, wealth: 2 };
+const PAY_AMOUNT_FEN = 1990;
+const PAY_POLL_INTERVAL_MS = 3000;
+const PAY_POLL_TIMEOUT_MS = 180000;
 
 const THEME_COPY = {
   love: {
@@ -49,10 +52,10 @@ const THEME_COPY = {
 };
 
 const LOADING_STEPS = [
-  "\u6821\u5bf9\u51fa\u751f\u4fe1\u606f",
-  "\u751f\u6210\u661f\u76d8\u7ed3\u6784",
-  "\u89e3\u6790\u5173\u7cfb\u80fd\u91cf",
-  "\u6574\u7406\u6700\u7ec8\u62a5\u544a"
+  "校对出生信息",
+  "生成星盘结构",
+  "解析关系能量",
+  "整理最终报告"
 ];
 
 const DEFAULT_STATE = {
@@ -68,13 +71,25 @@ const DEFAULT_STATE = {
   }
 };
 
+const paymentState = {
+  outTradeNo: "",
+  channel: "wechat",
+  scene: "",
+  status: "",
+  accessToken: "",
+  payPayload: null,
+  expireAt: "",
+  pollTimer: null,
+  pollStartedAt: 0
+};
+
 let activeTheme = "love";
 let activeModel = "deepseek";
 let activePayMethod = "wechat";
 let cityIndex = new Map();
 let currentLoadingTimer = null;
 let currentProgress = 0;
-let activeReport = null;
+let latestReport = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -94,13 +109,14 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-function normalizeServerValue(value) {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(normalizeServerValue);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizeServerValue(item)]));
+async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  const resp = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    throw new Error(data.message || `请求失败 (${resp.status})`);
   }
-  return value;
+  return data;
 }
 
 function getThemeSlide(theme) {
@@ -140,14 +156,11 @@ function pad2(value) {
 
 function parseBirthDate(birthDate) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate || "");
-  return match
-    ? { year: match[1], month: match[2], day: match[3] }
-    : { ...DEFAULT_BIRTH_DATE };
+  return match ? { year: match[1], month: match[2], day: match[3] } : { ...DEFAULT_BIRTH_DATE };
 }
 
 function composeBirthDate(year, month, day) {
-  if (!year || !month || !day) return "";
-  return `${year}-${pad2(month)}-${pad2(day)}`;
+  return year && month && day ? `${year}-${pad2(month)}-${pad2(day)}` : "";
 }
 
 function composeBirthPlace(person) {
@@ -188,11 +201,7 @@ function populateSelect(select, items, placeholder, selectedValue = "") {
   select.innerHTML = [`<option value="">${placeholder}</option>`]
     .concat(items.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`))
     .join("");
-  if (selectedValue && items.includes(selectedValue)) {
-    select.value = selectedValue;
-  } else {
-    select.value = "";
-  }
+  select.value = selectedValue && items.includes(selectedValue) ? selectedValue : "";
   select.classList.toggle("is-selected", Boolean(select.value));
 }
 
@@ -200,41 +209,20 @@ function populateDateSelects() {
   const years = Array.from({ length: YEARS.end - YEARS.start + 1 }, (_, index) => String(YEARS.start + index));
   const months = Array.from({ length: 12 }, (_, index) => pad2(index + 1));
   const days = Array.from({ length: 31 }, (_, index) => pad2(index + 1));
-
   document.querySelectorAll('[data-field="birthYear"]').forEach((select) => populateSelect(select, years, "年", DEFAULT_BIRTH_DATE.year));
   document.querySelectorAll('[data-field="birthMonth"]').forEach((select) => populateSelect(select, months, "月", DEFAULT_BIRTH_DATE.month));
   document.querySelectorAll('[data-field="birthDay"]').forEach((select) => populateSelect(select, days, "日", DEFAULT_BIRTH_DATE.day));
-}
-
-function applyFieldLabels(section, isSecondPerson) {
-  const labels = section.querySelectorAll(".field-label");
-  if (labels[0]) labels[0].textContent = isSecondPerson ? "TA 的名字(昵称)" : "名字(昵称)";
-  if (labels[1]) labels[1].textContent = "性别";
-  if (labels[2]) labels[2].textContent = "生日";
-  if (labels[3]) labels[3].innerHTML = '出生时间 <span class="opt">(算月亮上升用)</span>';
-  const province = section.querySelector(".province-field .field-label");
-  const city = section.querySelector(".city-name-field .field-label");
-  const district = section.querySelector(".district-field .field-label");
-  if (province) province.textContent = "省份";
-  if (city) city.textContent = "城市";
-  if (district) district.textContent = "区县";
 }
 
 function refreshPlaceSelects(theme, personKey) {
   const controls = getSlideControls(theme, personKey);
   if (!controls) return;
   const person = getThemeState(theme, personKey);
-  const provinces = getProvinces();
-  populateSelect(controls.province, provinces, "省", person.birthProvince);
-
+  populateSelect(controls.province, getProvinces(), "省", person.birthProvince);
   const cities = getCities(controls.province.value || person.birthProvince);
-  const nextCity = cities.includes(person.birthCity) ? person.birthCity : cities[0] || "";
-  populateSelect(controls.city, cities, "市", nextCity);
-
-  const districts = getDistricts(controls.province.value || person.birthProvince, controls.city.value || nextCity);
-  const nextDistrict = districts.includes(person.birthDistrict) ? person.birthDistrict : districts[0] || "";
-  populateSelect(controls.district, districts, "区/县", nextDistrict);
-
+  populateSelect(controls.city, cities, "市", person.birthCity);
+  const districts = getDistricts(controls.province.value || person.birthProvince, controls.city.value || person.birthCity);
+  populateSelect(controls.district, districts, "区/县", person.birthDistrict);
   setThemeState(theme, personKey, {
     birthProvince: controls.province.value,
     birthCity: controls.city.value,
@@ -256,41 +244,48 @@ function renderPerson(theme, personKey) {
     const active = button.dataset.value === person.gender;
     button.classList.toggle("active", active);
     button.classList.toggle("female", active && person.gender === "female");
-    button.textContent = button.dataset.value === "female" ? "女生 ♀" : "男生 ♂";
   });
-  applyFieldLabels(controls.section, theme === "love" && personKey === "b");
   refreshPlaceSelects(theme, personKey);
 }
 
-function renderThemeUI(theme) {
-  const copy = THEME_COPY[theme];
-  if (!copy) return;
+function adjustThemeIndicator() {
+  const nav = $("theme-nav");
+  const indicator = $("theme-tab-indicator");
+  const activeTab = nav?.querySelector(`.theme-tab[data-theme="${activeTheme}"]`);
+  if (!nav || !indicator || !activeTab) return;
+  indicator.style.width = `${activeTab.offsetWidth}px`;
+  indicator.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+}
+
+function adjustSliderPosition() {
+  const slides = $("form-slides");
+  if (slides) slides.style.transform = `translateX(-${THEME_SLIDES[activeTheme] * 100}%)`;
+}
+
+function adjustSliderHeight() {
+  const slides = $("form-slides");
+  const slide = getThemeSlide(activeTheme);
+  if (slides && slide) slides.style.height = `${slide.offsetHeight}px`;
+}
+
+function renderTheme(theme) {
+  activeTheme = THEME_COPY[theme] ? theme : "love";
+  const copy = THEME_COPY[activeTheme];
   $("hero-tag").textContent = copy.heroTag;
   $("hero-title").innerHTML = copy.heroTitle;
   $("submit-btn").textContent = copy.submitText;
-  $("theme-hint").textContent = theme === "love" ? "???????????????" : "????????????????????";
-  if ($("action-bar-sub")) $("action-bar-sub").textContent = theme === "love" ? "??????????? TA" : "?????????????";
-  if ($("copy-link-btn")) $("copy-link-btn").textContent = theme === "love" ? "?? ???TA" : "?? ??????";
-  if ($("restart-btn")) $("restart-btn").textContent = theme === "love" ? "? TA ????" : "??????";
-  if ($("report-note-primary")) $("report-note-primary").textContent = theme === "love" ? "????????? ? ????" : "???????? ? ????";
-  if ($("report-note-secondary")) $("report-note-secondary").textContent = theme === "love" ? "????,????? ??" : "???????????????? ?";
-  if ($("share-modal-title")) $("share-modal-title").textContent = theme === "love" ? "?????????" : "????????";
-
+  $("theme-hint").textContent = activeTheme === "love" ? "左右滑动切换不同主题" : "左右滑动查看不同主题内容";
   document.querySelectorAll(".theme-tab").forEach((button) => {
-    button.classList.toggle("active", button.dataset.theme === theme);
+    button.classList.toggle("active", button.dataset.theme === activeTheme);
   });
   document.querySelectorAll(".slide-title").forEach((el) => {
-    const slideTheme = el.closest(".form-slide")?.dataset.theme;
-    if (slideTheme && THEME_COPY[slideTheme]) el.textContent = THEME_COPY[slideTheme].slideTitle;
+    const themeCode = el.closest(".form-slide")?.dataset.theme;
+    if (themeCode) el.textContent = THEME_COPY[themeCode].slideTitle;
   });
   document.querySelectorAll(".slide-sub").forEach((el) => {
-    const slideTheme = el.closest(".form-slide")?.dataset.theme;
-    if (slideTheme && THEME_COPY[slideTheme]) el.textContent = THEME_COPY[slideTheme].slideSub;
+    const themeCode = el.closest(".form-slide")?.dataset.theme;
+    if (themeCode) el.textContent = THEME_COPY[themeCode].slideSub;
   });
-}
-function renderTheme(theme) {
-  activeTheme = THEME_COPY[theme] ? theme : "love";
-  renderThemeUI(activeTheme);
   renderPerson(activeTheme, "a");
   if (activeTheme === "love") renderPerson(activeTheme, "b");
   adjustThemeIndicator();
@@ -299,65 +294,25 @@ function renderTheme(theme) {
 }
 
 function setModel(model) {
-  activeModel = model === "deepseek" ? "deepseek" : "claude";
-  renderThemeUI(activeTheme);
-}
-
-function promptDeepAnalysisPayment() {
-  setModel("claude");
-  closeModal("value-modal");
-  openModal("pay-modal");
-}
-
-function getPayMethodCopy(method) {
-  return method === "alipay"
-    ? {
-        image: "img/alipay_qr.jpg",
-        buttonText: "用另一个手机支付宝扫码",
-        hint: "19.9 元，调用anthropic顶级大模型4.7很贵，但是可以知道你想知道的",
-        alt: "支付宝支付二维码"
-      }
-    : {
-        image: "img/wechat_qr.jpg",
-        buttonText: "用另一个手机微信扫码",
-        hint: "19.9 元，调用anthropic顶级大模型4.7很贵，但是可以知道你想知道的",
-        alt: "微信支付二维码"
-      };
+  activeModel = model === "claude" ? "claude" : "deepseek";
+  document.querySelectorAll(".model-option").forEach((button) => {
+    button.classList.toggle("active", button.dataset.model === activeModel);
+  });
 }
 
 function updatePayMethodUI(method) {
   activePayMethod = method === "alipay" ? "alipay" : "wechat";
-  const copy = getPayMethodCopy(activePayMethod);
+  paymentState.channel = activePayMethod;
   document.querySelectorAll(".pay-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.payMethod === activePayMethod);
   });
-  const qr = $("pay-qr-img");
-  if (qr) {
-    qr.src = copy.image;
-    qr.alt = copy.alt;
-  }
-  if ($("pay-open-btn")) $("pay-open-btn").textContent = copy.buttonText;
-  if ($("pay-open-hint")) $("pay-open-hint").textContent = copy.hint;
 }
 
 function showFormError(message) {
   const box = $("form-error");
   if (!box) return;
-  if (!message) {
-    box.textContent = "";
-    box.classList.add("hidden");
-    return;
-  }
-  box.textContent = message;
-  box.classList.remove("hidden");
-}
-
-function showToast(message) {
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  window.setTimeout(() => toast.remove(), 1800);
+  box.textContent = message || "";
+  box.classList.toggle("hidden", !message);
 }
 
 function openModal(id) {
@@ -377,9 +332,9 @@ function closeModal(id) {
 }
 
 function switchPage(page) {
-  $("page-form").classList.toggle("hidden", page !== "form");
-  $("page-loading").classList.toggle("hidden", page !== "loading");
-  $("page-report").classList.toggle("hidden", page !== "report");
+  $("page-form")?.classList.toggle("hidden", page !== "form");
+  $("page-loading")?.classList.toggle("hidden", page !== "loading");
+  $("page-report")?.classList.toggle("hidden", page !== "report");
 }
 
 function renderLoadingSteps(activeIndex) {
@@ -387,21 +342,9 @@ function renderLoadingSteps(activeIndex) {
   if (!container) return;
   container.innerHTML = LOADING_STEPS.map((step, index) => {
     const state = index < activeIndex ? "completed" : index === activeIndex ? "active" : "pending";
-    const stateText =
-      state === "completed"
-        ? "\u5df2\u5b8c\u6210"
-        : state === "active"
-          ? "\u6b63\u5728\u5904\u7406\u4e2d..."
-          : "\u7b49\u5f85\u6267\u884c";
-    return `
-      <div class="loading-step ${state}">
-        <div class="loading-step-status">${String(index + 1).padStart(2, "0")}</div>
-        <div class="loading-step-copy">
-          <div class="loading-step-title">${escapeHtml(step)}</div>
-          <div class="loading-step-sub">${stateText}</div>
-        </div>
-      </div>
-    `;
+    const mark = index < activeIndex ? "✓" : String(index + 1).padStart(2, "0");
+    const sub = state === "completed" ? "已完成" : state === "active" ? "正在处理中..." : "等待执行";
+    return `<div class="loading-step ${state}"><div class="loading-step-status">${mark}</div><div class="loading-step-copy"><div class="loading-step-title">${escapeHtml(step)}</div><div class="loading-step-sub">${sub}</div></div></div>`;
   }).join("");
 }
 
@@ -409,206 +352,28 @@ function setLoadingProgress(percent, label) {
   currentProgress = percent;
   if ($("loading-progress-fill")) $("loading-progress-fill").style.width = `${percent}%`;
   if ($("loading-progress-value")) $("loading-progress-value").textContent = `${Math.round(percent)}%`;
-  if ($("loading-progress-label") && label) $("loading-progress-label").textContent = label;
+  if ($("loading-progress-label")) $("loading-progress-label").textContent = label;
 }
 
 function startLoadingAnimation() {
   stopLoadingAnimation(0);
   let step = 0;
   renderLoadingSteps(step);
-  setLoadingProgress(0, "\u51c6\u5907\u5f00\u59cb...");
+  setLoadingProgress(0, "准备开始...");
   currentLoadingTimer = window.setInterval(() => {
-    const next = Math.min(currentProgress + 8, 92);
+    const next = Math.min(currentProgress + 7, 92);
     if (next >= (step + 1) * 23 && step < LOADING_STEPS.length - 1) {
       step += 1;
       renderLoadingSteps(step);
     }
     setLoadingProgress(next, LOADING_STEPS[Math.min(step, LOADING_STEPS.length - 1)]);
-  }, 260);
+  }, 420);
 }
 
 function stopLoadingAnimation(finalProgress) {
-  if (currentLoadingTimer) {
-    clearInterval(currentLoadingTimer);
-    currentLoadingTimer = null;
-  }
-  setLoadingProgress(
-    finalProgress,
-    finalProgress >= 100 ? "\u5df2\u5b8c\u6210" : "\u5904\u7406\u4e2d..."
-  );
-}
-function buildPersonPayload(theme, personKey) {
-  const person = getThemeState(theme, personKey);
-  return {
-    name: (person.name || "").trim(),
-    gender: person.gender,
-    birthDate: person.birthDate,
-    birthTime: person.birthTime || "",
-    birthPlace: composeBirthPlace(person)
-  };
-}
-
-function validateThemeState(theme) {
-  const personA = getThemeState(theme, "a");
-  if (!personA.name.trim()) return "请填写名字";
-  if (!personA.birthDate) return "请选择生日";
-  if (!personA.birthProvince || !personA.birthCity || !personA.birthDistrict) return "请完整选择出生省市区";
-  if (theme === "love") {
-    const personB = getThemeState(theme, "b");
-    if (!personB.name.trim()) return "请填写 TA 的名字";
-    if (!personB.birthDate) return "请填写 TA 的生日";
-    if (!personB.birthProvince || !personB.birthCity || !personB.birthDistrict) return "请完整选择 TA 的出生省市区";
-    if (personA.gender === personB.gender) return "爱情合盘暂不支持同一性别，请选择一男一女";
-  }
-  return "";
-}
-
-async function fetchJSON(url, options = {}) {
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(data.message || `请求失败 (${response.status})`);
-    error.status = response.status;
-    error.payload = data;
-    throw error;
-  }
-  return data;
-}
-
-function getZodiacIcon(zodiac) {
-  const icons = {
-    白羊座: "♈", 金牛座: "♉", 双子座: "♊", 巨蟹座: "♋", 狮子座: "♌", 处女座: "♍",
-    天秤座: "♎", 天蝎座: "♏", 射手座: "♐", 摩羯座: "♑", 水瓶座: "♒", 双鱼座: "♓"
-  };
-  return icons[zodiac] || "✦";
-}
-
-function renderZodiacDetails(report) {
-  const container = $("zodiac-details");
-  if (!container) return;
-  const single = !report.zodiacB;
-  container.innerHTML = `
-    <div class="zd-head">
-      <div class="zd-head-title">星盘详情</div>
-      <div class="zd-head-sub">${single ? "SINGLE REPORT" : "DUO REPORT"}</div>
-    </div>
-    <div class="zd-grid ${single ? "single-report" : ""}">
-      <div class="zd-person ${single ? "single-report" : ""}">
-        <div class="zd-person-name">${escapeHtml(report.personA?.name || "A")}</div>
-        <div class="zd-rows">
-          <div class="zd-row"><span class="zd-label">太阳</span><span class="zd-value">${escapeHtml(report.zodiacA?.sun || "-")}</span></div>
-          <div class="zd-row"><span class="zd-label">月亮</span><span class="zd-value">${escapeHtml(report.zodiacA?.moon || "-")}</span></div>
-          <div class="zd-row"><span class="zd-label">上升</span><span class="zd-value">${escapeHtml(report.zodiacA?.rising || "-")}</span></div>
-        </div>
-      </div>
-      ${single ? "" : `
-        <div class="zd-divider"></div>
-        <div class="zd-person">
-          <div class="zd-person-name">${escapeHtml(report.personB?.name || "B")}</div>
-          <div class="zd-rows">
-            <div class="zd-row"><span class="zd-label">太阳</span><span class="zd-value">${escapeHtml(report.zodiacB?.sun || "-")}</span></div>
-            <div class="zd-row"><span class="zd-label">月亮</span><span class="zd-value">${escapeHtml(report.zodiacB?.moon || "-")}</span></div>
-            <div class="zd-row"><span class="zd-label">上升</span><span class="zd-value">${escapeHtml(report.zodiacB?.rising || "-")}</span></div>
-          </div>
-        </div>
-      `}
-    </div>
-  `;
-}
-
-function renderChapters(report) {
-  const container = $("chapters-container");
-  if (!container) return;
-  const chapters = Array.isArray(report.chapters) ? report.chapters : [];
-  container.innerHTML = chapters.map((chapter, index) => `
-    <div class="chapter">
-      <div class="chapter-num">${String(index + 1).padStart(2, "0")}</div>
-      <div class="chapter-head">
-        <div class="chapter-emoji">${escapeHtml(chapter.emoji || "✦")}</div>
-        <div class="chapter-title">${escapeHtml(chapter.title || "")}</div>
-      </div>
-      <div class="chapter-body">${escapeHtml(chapter.content || "")}</div>
-    </div>
-  `).join("");
-}
-
-function renderEssence(report) {
-  if ($("essence-list")) {
-    $("essence-list").innerHTML = (report.essence || []).map((item, index) => `
-      <li class="essence-item">
-        <div class="essence-num">${String(index + 1).padStart(2, "0")}</div>
-        <div class="essence-copy">${escapeHtml(item)}</div>
-      </li>
-    `).join("");
-  }
-}
-
-function renderReport(rawReport) {
-  const report = normalizeServerValue(rawReport || {});
-  activeReport = report;
-  const reportType = THEMES.includes(report.reportType) ? report.reportType : activeTheme;
-  const copy = THEME_COPY[reportType];
-  $("cover-title-cn").textContent = copy.coverTitleCn;
-  $("cover-title-en").textContent = copy.coverTitleEn;
-  $("cover-score-label").textContent = copy.scoreLabel;
-  $("cover-score").textContent = report.score ?? "--";
-  $("cover-type").textContent = report.relationshipType || "关系类型";
-  $("cover-tagline").textContent = report.tagline || "";
-  $("cover-id").textContent = report.reportUid || "NO. SASC-000000-PF4E";
-  $("cover-date").textContent = new Date().toLocaleString("zh-CN");
-  $("cover-person-a").textContent = report.personA?.name || "—";
-  $("cover-person-b").textContent = report.personB?.name || "—";
-  $("cover-zodiac-a-name").textContent = report.zodiacA?.sun || "—";
-  $("cover-zodiac-b-name").textContent = report.zodiacB?.sun || "—";
-  $("cover-zodiac-a-icon").textContent = getZodiacIcon(report.zodiacA?.sun);
-  $("cover-zodiac-b-icon").textContent = report.zodiacB ? getZodiacIcon(report.zodiacB?.sun) : "";
-  $("cover-zodiac-row").classList.toggle("single-report", !report.zodiacB);
-  renderZodiacDetails(report);
-  renderChapters(report);
-  renderEssence(report);
-  stopLoadingAnimation(100);
-  switchPage("report");
-}
-
-async function submitForm() {
-  showFormError("");
-  const validation = validateThemeState(activeTheme);
-  if (validation) {
-    showFormError(validation);
-    return;
-  }
-
-  if (activeModel === "claude") {
-    openModal("pay-modal");
-    return;
-  }
-
-  const request = {
-    personA: buildPersonPayload(activeTheme, "a"),
-    model: activeModel,
-    reportType: activeTheme
-  };
-  if (activeTheme === "love") request.personB = buildPersonPayload(activeTheme, "b");
-
-  switchPage("loading");
-  startLoadingAnimation();
-  try {
-    const report = await fetchJSON("/api/compatibility", {
-      method: "POST",
-      body: JSON.stringify(request)
-    });
-    renderReport(report);
-  } catch (error) {
-    stopLoadingAnimation(0);
-    switchPage("form");
-    showFormError(error.message || "生成失败，请稍后再试");
-  }
+  if (currentLoadingTimer) clearInterval(currentLoadingTimer);
+  currentLoadingTimer = null;
+  setLoadingProgress(finalProgress, finalProgress >= 100 ? "已完成" : "处理中...");
 }
 
 function syncBirthDate(theme, personKey) {
@@ -617,6 +382,396 @@ function syncBirthDate(theme, personKey) {
   setThemeState(theme, personKey, {
     birthDate: composeBirthDate(controls.year.value, controls.month.value, controls.day.value)
   });
+}
+
+function slugTheme(theme) {
+  if (theme === "career") return "career";
+  if (theme === "wealth") return "wealth";
+  return "love";
+}
+
+function getClientContext() {
+  const ua = navigator.userAgent || "";
+  return {
+    deviceToken: localStorage.getItem("zodiac_device_token") || ensureDeviceToken(),
+    userAgent: ua,
+    source: location.href,
+    insideWechat: /MicroMessenger/i.test(ua),
+    mobile: /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
+  };
+}
+
+function ensureDeviceToken() {
+  const existing = localStorage.getItem("zodiac_device_token");
+  if (existing) return existing;
+  const token = `dev-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+  localStorage.setItem("zodiac_device_token", token);
+  return token;
+}
+
+function inferWechatScene() {
+  const ua = navigator.userAgent || "";
+  const insideWechat = /MicroMessenger/i.test(ua);
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  if (insideWechat) return "wechat_jsapi";
+  if (mobile) return "wechat_h5";
+  return "wechat_native";
+}
+
+function inferChannelAndScene() {
+  if (activePayMethod === "alipay") {
+    return { channel: "alipay", scene: "alipay_wap" };
+  }
+  return { channel: "wechat", scene: inferWechatScene() };
+}
+
+function normalizeName(value, fallback) {
+  const text = String(value || "").trim();
+  return text || fallback;
+}
+
+function resolveCoords(person) {
+  const key = composeBirthPlace(person).trim();
+  const item = key ? cityIndex.get?.(key) : null;
+  return item ? { lat: item.lat, lng: item.lng } : null;
+}
+
+function buildPersonPayload(person, fallbackName) {
+  const birthPlace = composeBirthPlace(person);
+  const coords = resolveCoords(person);
+  return {
+    name: normalizeName(person.name, fallbackName),
+    gender: person.gender,
+    birthDate: person.birthDate,
+    birthTime: person.birthTime || "12:30",
+    birthPlace,
+    birthLatitude: coords?.lat ?? null,
+    birthLongitude: coords?.lng ?? null,
+    birthTimezone: "Asia/Shanghai"
+  };
+}
+
+function buildCompatibilityPayload(model) {
+  const theme = slugTheme(activeTheme);
+  const payload = {
+    model,
+    reportType: theme,
+    personA: buildPersonPayload(stateByTheme[activeTheme].a, activeTheme === "love" ? "你" : "我的名字")
+  };
+  if (activeTheme === "love") {
+    payload.personB = buildPersonPayload(stateByTheme[activeTheme].b, "TA的名字");
+  }
+  if (model === "claude" && paymentState.accessToken) {
+    payload.accessToken = paymentState.accessToken;
+  }
+  return payload;
+}
+
+function validateCurrentForm() {
+  const a = stateByTheme[activeTheme].a;
+  if (!a.name.trim()) return "请先填写名字";
+  if (!a.birthProvince || !a.birthCity || !a.birthDistrict) return "请完整选择出生城市";
+  if (activeTheme === "love") {
+    const b = stateByTheme[activeTheme].b;
+    if (!b.name.trim()) return "请先填写 TA 的名字";
+    if (!b.birthProvince || !b.birthCity || !b.birthDistrict) return "请完整选择 TA 的出生城市";
+  }
+  return "";
+}
+
+function resetPaymentState() {
+  if (paymentState.pollTimer) clearInterval(paymentState.pollTimer);
+  paymentState.outTradeNo = "";
+  paymentState.scene = "";
+  paymentState.status = "";
+  paymentState.accessToken = "";
+  paymentState.payPayload = null;
+  paymentState.expireAt = "";
+  paymentState.pollTimer = null;
+  paymentState.pollStartedAt = 0;
+}
+
+function setPayStatus(text, success = false) {
+  const el = $("pay-status-text");
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle("success", success);
+}
+
+function setPayLoading(loading) {
+  $("pay-qr-loading")?.classList.toggle("hidden", !loading);
+}
+
+function setPayQrImage(src) {
+  const img = $("pay-qr-img");
+  if (!img) return;
+  img.src = src || "";
+  img.classList.toggle("hidden", !src);
+}
+
+function renderPaymentModal(order) {
+  paymentState.outTradeNo = order.outTradeNo || "";
+  paymentState.status = order.status || "";
+  paymentState.channel = order.channel || activePayMethod;
+  paymentState.scene = order.scene || "";
+  paymentState.expireAt = order.expireAt || "";
+  paymentState.payPayload = order.payPayload || null;
+  $("pay-order-no").textContent = paymentState.outTradeNo || "—";
+  setPayLoading(false);
+  setPayQrImage("");
+
+  const payload = paymentState.payPayload || {};
+  const openBtn = $("pay-open-btn");
+  const hint = $("pay-open-hint");
+  const qrTitle = $("pay-qr-title");
+
+  if (paymentState.channel === "wechat") {
+    if (payload.mode === "JSAPI") {
+      openBtn.textContent = "打开微信支付";
+      hint.textContent = "当前处于微信内，将使用微信官方支付拉起。";
+      qrTitle.textContent = "微信内支付无需二维码";
+      setPayStatus("订单已创建，请点击按钮拉起微信支付");
+    } else if (payload.mode === "H5") {
+      openBtn.textContent = "打开微信支付";
+      hint.textContent = "当前为手机浏览器，将跳转微信 H5 支付。";
+      qrTitle.textContent = "如果无法跳转，也可在电脑上使用二维码兜底";
+      setPayStatus("订单已创建，请点击按钮前往微信支付");
+    } else {
+      openBtn.textContent = "刷新微信支付二维码";
+      hint.textContent = "当前环境使用微信 Native 二维码支付。";
+      qrTitle.textContent = "请使用微信扫码支付";
+      if (payload.codeUrl) {
+        setPayQrImage(`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payload.codeUrl)}`);
+      }
+      setPayStatus("订单已创建，请扫码支付");
+    }
+  } else {
+    openBtn.textContent = "打开支付宝支付";
+    hint.textContent = "将通过支付宝 WAP 官方支付链路完成付款。";
+    qrTitle.textContent = "手机可直接打开支付宝，电脑端可用下方二维码兜底";
+    if (payload.payUrl) {
+      setPayQrImage(`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payload.payUrl)}`);
+    }
+    setPayStatus("订单已创建，请点击按钮前往支付宝支付");
+  }
+}
+
+async function createPaymentOrder() {
+  setPayLoading(true);
+  setPayStatus("正在创建支付订单...");
+  $("pay-order-no").textContent = "—";
+  const { channel, scene } = inferChannelAndScene();
+  const order = await api("/api/pay/orders", {
+    method: "POST",
+    body: JSON.stringify({
+      channel,
+      scene,
+      reportType: slugTheme(activeTheme),
+      amountFen: PAY_AMOUNT_FEN,
+      subject: activeTheme === "love" ? "深度解析灵魂合盘" : activeTheme === "career" ? "深度解析事业报告" : "深度解析财运报告",
+      returnUrl: location.href,
+      clientContext: getClientContext()
+    })
+  });
+  renderPaymentModal(order);
+  startPollingPaymentStatus();
+}
+
+function stopPaymentPolling() {
+  if (paymentState.pollTimer) clearInterval(paymentState.pollTimer);
+  paymentState.pollTimer = null;
+}
+
+function startPollingPaymentStatus() {
+  stopPaymentPolling();
+  paymentState.pollStartedAt = Date.now();
+  paymentState.pollTimer = window.setInterval(async () => {
+    if (!paymentState.outTradeNo) return;
+    if (Date.now() - paymentState.pollStartedAt > PAY_POLL_TIMEOUT_MS) {
+      stopPaymentPolling();
+      setPayStatus("轮询超时，你支付完成后仍可点击“我已支付，立即检查”");
+      return;
+    }
+    try {
+      const status = await api(`/api/pay/orders/${paymentState.outTradeNo}`);
+      applyPaymentStatus(status);
+    } catch {}
+  }, PAY_POLL_INTERVAL_MS);
+}
+
+function applyPaymentStatus(status) {
+  paymentState.status = status.status || paymentState.status;
+  if (status.accessToken) paymentState.accessToken = status.accessToken;
+  if (status.paid && status.accessToken) {
+    stopPaymentPolling();
+    setPayStatus("支付成功，深度解析凭证已就绪", true);
+    $("pay-order-hint").textContent = "支付已到账，现在可以继续生成深度解析。";
+    $("pay-confirm-btn").textContent = "进入深度解析";
+  }
+}
+
+async function checkPaymentStatusNow() {
+  if (!paymentState.outTradeNo) {
+    throw new Error("请先创建支付订单");
+  }
+  const status = await api(`/api/pay/orders/${paymentState.outTradeNo}`);
+  applyPaymentStatus(status);
+  if (!status.paid || !status.accessToken) {
+    throw new Error("订单仍未支付成功，请完成支付后再试");
+  }
+}
+
+async function openPaymentGateway() {
+  const payload = paymentState.payPayload || {};
+  if (paymentState.channel === "wechat") {
+    if (payload.mode === "JSAPI") {
+      setPayStatus("微信 JSAPI 参数已生成，请在正式微信环境中拉起支付");
+      return;
+    }
+    if (payload.mwebUrl) {
+      window.location.href = payload.mwebUrl;
+      return;
+    }
+    if (payload.codeUrl) {
+      setPayStatus("请使用微信扫码支付");
+      return;
+    }
+  }
+  if (paymentState.channel === "alipay" && payload.payUrl) {
+    window.location.href = payload.payUrl;
+    return;
+  }
+  throw new Error("当前支付方式尚未返回可用的支付入口");
+}
+
+function buildReportId(reportUid) {
+  const core = String(reportUid || "").slice(-8).toUpperCase();
+  return `珍藏编号 · ZD-${core || "PREVIEW"}-OP47`;
+}
+
+function zodiacText(info) {
+  if (!info) return "—";
+  return [info.sun, info.moon, info.rising].filter(Boolean).join(" · ");
+}
+
+function chapterEmoji(index) {
+  return String(index + 1).padStart(2, "0");
+}
+
+function renderReport(response) {
+  latestReport = response;
+  const themeCopy = THEME_COPY[slugTheme(response.reportType)];
+  $("cover-title-cn").textContent = themeCopy?.coverTitleCn || "深度报告";
+  $("cover-title-en").textContent = themeCopy?.coverTitleEn || "Premium Reading";
+  $("cover-score").textContent = response.score ?? "--";
+  $("cover-score-label").textContent = themeCopy?.scoreLabel || "REPORT INDEX";
+  $("cover-type").textContent = response.relationshipType || "关系洞察";
+  $("cover-tagline").textContent = response.tagline || "愿你更了解自己，也更从容地做选择。";
+  $("cover-id").textContent = buildReportId(response.reportUid);
+  $("cover-date").textContent = new Date().toLocaleDateString("zh-CN");
+  $("cover-person-a").textContent = response.personA?.name || stateByTheme[activeTheme].a.name || "你";
+  $("cover-zodiac-a-name").textContent = (response.zodiacA?.sun || "SUN").toUpperCase();
+  $("cover-zodiac-a-icon").textContent = "✦";
+
+  const isLove = response.reportType === "love";
+  $("cover-zodiac-b-block").style.display = isLove ? "" : "none";
+  $("cover-heart").style.display = isLove ? "" : "none";
+  if (isLove) {
+    $("cover-person-b").textContent = response.personB?.name || stateByTheme[activeTheme].b.name || "TA";
+    $("cover-zodiac-b-name").textContent = (response.zodiacB?.sun || "MOON").toUpperCase();
+    $("cover-zodiac-b-icon").textContent = "✦";
+  }
+
+  $("zodiac-details").innerHTML = `
+    <div class="chapter-head">
+      <div class="chapter-emoji">✧</div>
+      <div class="chapter-title">星盘重点</div>
+    </div>
+    <div class="chapter-body">
+      <strong>${escapeHtml(response.personA?.name || "你")}</strong>：${escapeHtml(zodiacText(response.zodiacA))}<br>
+      ${isLove ? `<strong>${escapeHtml(response.personB?.name || "TA")}</strong>：${escapeHtml(zodiacText(response.zodiacB))}` : ""}
+    </div>
+  `;
+
+  $("chapters-container").innerHTML = (response.chapters || []).map((chapter, index) => `
+    <div class="chapter">
+      <div class="chapter-num">${chapterEmoji(index)}</div>
+      <div class="chapter-head">
+        <div class="chapter-emoji">${escapeHtml(chapter.emoji || "✦")}</div>
+        <div class="chapter-title">${escapeHtml(chapter.title || `章节 ${index + 1}`)}</div>
+      </div>
+      <div class="chapter-body">${escapeHtml(chapter.content || "").replaceAll("\n", "<br>")}</div>
+    </div>
+  `).join("");
+
+  $("essence-list").innerHTML = (response.essence || []).map((item, index) => `
+    <li class="essence-item">
+      <div class="essence-item-num">${String(index + 1).padStart(2, "0")}</div>
+      <div class="essence-item-text">${escapeHtml(item)}</div>
+    </li>
+  `).join("");
+
+  $("action-bar-sub").textContent = response.reportType === "love" ? "珍藏这份属于你们的关系报告" : "珍藏这份属于你的专属报告";
+}
+
+async function generateReport(model) {
+  const payload = buildCompatibilityPayload(model);
+  switchPage("loading");
+  startLoadingAnimation();
+  try {
+    const response = await api("/api/compatibility", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    stopLoadingAnimation(100);
+    renderReport(response);
+    switchPage("report");
+  } catch (error) {
+    stopLoadingAnimation(0);
+    switchPage("form");
+    throw error;
+  }
+}
+
+async function handleSubmit() {
+  showFormError("");
+  const validationError = validateCurrentForm();
+  if (validationError) {
+    showFormError(validationError);
+    return;
+  }
+  if (activeModel === "claude") {
+    openModal("value-modal");
+    return;
+  }
+  try {
+    await generateReport("deepseek");
+  } catch (error) {
+    showFormError(error.message || "生成失败");
+  }
+}
+
+async function beginPremiumFlow() {
+  closeModal("value-modal");
+  resetPaymentState();
+  updatePayMethodUI(inferChannelAndScene().channel);
+  openModal("pay-modal");
+  try {
+    await createPaymentOrder();
+  } catch (error) {
+    setPayLoading(false);
+    setPayStatus(error.message || "创建支付订单失败");
+  }
+}
+
+async function enterPremiumReport() {
+  try {
+    await checkPaymentStatusNow();
+    closeModal("pay-modal");
+    await generateReport("claude");
+  } catch (error) {
+    setPayStatus(error.message || "支付校验失败");
+  }
 }
 
 function bindFormEvents() {
@@ -632,7 +787,6 @@ function bindFormEvents() {
       const personKey = element.dataset.person;
       const field = element.dataset.field;
       if (!theme || !personKey || !field) return;
-
       if (field === "name" || field === "birthTime") {
         setThemeState(theme, personKey, { [field]: element.value });
       } else if (field === "birthYear" || field === "birthMonth" || field === "birthDay") {
@@ -645,7 +799,6 @@ function bindFormEvents() {
         refreshPlaceSelects(theme, personKey);
       } else if (field === "birthDistrict") {
         setThemeState(theme, personKey, { birthDistrict: element.value });
-        element.classList.toggle("is-selected", Boolean(element.value));
       }
     });
   });
@@ -663,6 +816,7 @@ function bindFormEvents() {
   document.querySelectorAll(".model-option").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.model === "claude") {
+        setModel("claude");
         openModal("value-modal");
       } else {
         setModel("deepseek");
@@ -671,40 +825,52 @@ function bindFormEvents() {
   });
 
   document.querySelectorAll(".pay-tab").forEach((button) => {
-    button.addEventListener("click", () => updatePayMethodUI(button.dataset.payMethod));
+    button.addEventListener("click", async () => {
+      updatePayMethodUI(button.dataset.payMethod);
+      resetPaymentState();
+      try {
+        await createPaymentOrder();
+      } catch (error) {
+        setPayStatus(error.message || "创建支付订单失败");
+      }
+    });
   });
 
-  $("submit-btn")?.addEventListener("click", submitForm);
-  $("restart-btn")?.addEventListener("click", () => {
-    activeReport = null;
-    switchPage("form");
-    renderTheme(activeTheme);
-  });
-  $("copy-link-btn")?.addEventListener("click", () => {
-    if (!activeReport?.reportUid) return showToast("暂无可分享链接");
-    const url = `${location.origin}${location.pathname}?uid=${encodeURIComponent(activeReport.reportUid)}`;
-    navigator.clipboard.writeText(url).then(() => showToast("分享链接已复制")).catch(() => showToast(url));
-  });
-
-  $("share-btn")?.addEventListener("click", () => openModal("share-modal"));
+  $("submit-btn")?.addEventListener("click", handleSubmit);
   $("share-close")?.addEventListener("click", () => closeModal("share-modal"));
-  $("share-download")?.addEventListener("click", () => closeModal("share-modal"));
-  $("pdf-btn")?.addEventListener("click", () => showToast("PDF 导出稍后接入"));
-
+  $("pay-modal-close")?.addEventListener("click", () => {
+    stopPaymentPolling();
+    closeModal("pay-modal");
+  });
   $("value-modal-close")?.addEventListener("click", () => closeModal("value-modal"));
-  $("value-modal-pay-btn")?.addEventListener("click", promptDeepAnalysisPayment);
+  $("city-picker-close")?.addEventListener("click", () => closeModal("city-picker-modal"));
+  $("value-modal-pay-btn")?.addEventListener("click", beginPremiumFlow);
   $("value-modal-free-btn")?.addEventListener("click", () => {
     setModel("deepseek");
     closeModal("value-modal");
   });
-
-  $("pay-modal-close")?.addEventListener("click", () => closeModal("pay-modal"));
-  $("pay-open-btn")?.addEventListener("click", () => showToast(activePayMethod === "alipay" ? "请用支付宝扫码支付" : "请用微信扫码支付"));
-  $("pay-confirm-btn")?.addEventListener("click", () => { closeModal("pay-modal"); showToast("支付确认流程稍后接入"); });
-
-  $("city-picker-close")?.addEventListener("click", () => closeModal("city-picker-modal"));
-  $("city-picker-clear")?.addEventListener("click", () => closeModal("city-picker-modal"));
-  $("city-picker-confirm")?.addEventListener("click", () => closeModal("city-picker-modal"));
+  $("pay-open-btn")?.addEventListener("click", async () => {
+    try {
+      await openPaymentGateway();
+    } catch (error) {
+      setPayStatus(error.message || "暂时无法打开支付入口");
+    }
+  });
+  $("pay-confirm-btn")?.addEventListener("click", enterPremiumReport);
+  $("restart-btn")?.addEventListener("click", () => {
+    latestReport = null;
+    switchPage("form");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  $("copy-link-btn")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      showFormError("链接已复制");
+      setTimeout(() => showFormError(""), 1500);
+    } catch {}
+  });
+  $("share-btn")?.addEventListener("click", () => openModal("share-modal"));
+  $("pdf-btn")?.addEventListener("click", () => window.print());
 
   document.addEventListener("click", (event) => {
     const target = event.target;
@@ -721,36 +887,35 @@ function bindFormEvents() {
 async function loadCityData() {
   const response = await fetch(CITY_DATA_URL);
   if (!response.ok) throw new Error("无法加载省市区数据");
-  cityIndex = buildCityIndex(await response.json());
-}
-
-async function loadSharedReport(uid) {
-  const report = await fetchJSON(`/api/compatibility/report/${encodeURIComponent(uid)}`);
-  renderReport(report);
+  const raw = await response.json();
+  cityIndex = buildCityIndex(raw);
+  cityIndex.get = function getValue(key) {
+    return raw[key];
+  };
 }
 
 async function init() {
   document.title = "灵魂合盘 · 你和 TA 的缘分密码 · 小登哥出品";
   populateDateSelects();
-  await loadCityData();
   bindFormEvents();
+  try {
+    await loadCityData();
+  } catch (error) {
+    showFormError(error.message || "页面初始化失败");
+  }
   THEMES.forEach((theme) => {
     renderPerson(theme, "a");
     if (theme === "love") renderPerson(theme, "b");
   });
   updatePayMethodUI(activePayMethod);
+  setModel(activeModel);
   renderTheme(activeTheme);
-
   window.addEventListener("resize", () => {
     adjustThemeIndicator();
     adjustSliderHeight();
   });
-
-  const sharedUid = new URLSearchParams(location.search).get("uid");
-  if (sharedUid) await loadSharedReport(sharedUid);
 }
 
 init().catch((error) => {
-  console.error(error);
   showFormError(error.message || "页面初始化失败");
 });

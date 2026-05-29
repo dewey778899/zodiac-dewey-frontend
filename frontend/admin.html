@@ -10,7 +10,7 @@
   <div class="page">
     <div id="login-view" class="login-wrap">
       <h2>小登哥后台</h2>
-      <p>先用单管理员账号密码登录。第一版可以查看模型点击/成功数据、二维码展示/切换数据和报告记录。</p>
+      <p>先用单管理员账号密码登录。当前版本支持查看支付创建/成功、模型点击/成功、订单补单与回调日志。</p>
       <div class="field">
         <label for="admin-username">管理员账号</label>
         <input id="admin-username" autocomplete="username" placeholder="请输入账号">
@@ -39,24 +39,29 @@
       <div class="dashboard">
         <div class="card">
           <h2 class="section-title">核心指标</h2>
-          <p class="section-sub">今天 vs 累计，一眼看到模型使用和支付二维码触达情况。</p>
+          <p class="section-sub">今天 vs 累计，一眼看到模型使用、支付创建、支付成功和回调异常。</p>
           <div class="metric-grid" id="metric-grid"></div>
         </div>
 
         <div class="card">
-          <h2 class="section-title">待确认订单</h2>
-          <p class="section-sub">用户扫码支付后，在此确认到账即可解锁深度解析。</p>
+          <h2 class="section-title">支付订单</h2>
+          <p class="section-sub">支持查看官方支付订单、异常补单、关闭未支付订单，以及最近回调日志。</p>
           <div class="order-tabs">
-            <button class="order-tab active" data-status="CREATED">待确认</button>
+            <button class="order-tab active" data-status="PAYING">支付中</button>
             <button class="order-tab" data-status="PAID">已支付</button>
+            <button class="order-tab" data-status="CLOSED">已关闭</button>
             <button class="order-tab" data-status="">全部</button>
           </div>
           <table class="report-table order-table">
             <thead>
               <tr>
                 <th>订单号</th>
+                <th>渠道</th>
+                <th>场景</th>
                 <th>金额</th>
                 <th>状态</th>
+                <th>验签</th>
+                <th>Token</th>
                 <th>创建时间</th>
                 <th>支付时间</th>
                 <th>操作</th>
@@ -76,7 +81,7 @@
 
         <div class="card">
           <h2 class="section-title">最近 7 天趋势</h2>
-          <p class="section-sub">重点关注 DeepSeek / 深度解析点击与成功，以及二维码展示热度。</p>
+          <p class="section-sub">重点关注模型点击、生成成功、订单创建和支付成功的变化节奏。</p>
           <table class="trend-table">
             <thead>
               <tr>
@@ -85,12 +90,32 @@
                 <th>深度解析 点击</th>
                 <th>DeepSeek 成功</th>
                 <th>深度解析 成功</th>
-                <th>支付弹窗</th>
-                <th>微信展示</th>
-                <th>支付宝展示</th>
+                <th>支付创建</th>
+                <th>支付成功</th>
+                <th>补单次数</th>
               </tr>
             </thead>
             <tbody id="trend-body"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">回调日志</h2>
+          <p class="section-sub">点击订单行内按钮后，可在这里查看最近 20 条回调或补单日志。</p>
+          <div class="empty" id="log-empty">先点击订单列表中的“查看日志”</div>
+          <table class="report-table hidden" id="log-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>渠道</th>
+                <th>类型</th>
+                <th>验签</th>
+                <th>结果</th>
+                <th>错误</th>
+                <th>原始回调</th>
+              </tr>
+            </thead>
+            <tbody id="log-body"></tbody>
           </table>
         </div>
 

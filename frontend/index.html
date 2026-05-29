@@ -1,4 +1,4 @@
-﻿﻿<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -440,31 +440,35 @@
         <div class="pay-tab active" data-pay-method="wechat" id="pay-tab-wechat">微信支付</div>
         <div class="pay-tab" data-pay-method="alipay" id="pay-tab-alipay">支付宝</div>
       </div>
+      <div class="pay-status-text" id="pay-status-text">正在准备支付订单...</div>
       <div class="pay-qr-area">
-        <div style="font-size: 14px; color: var(--ink-light); margin-bottom: 10px; font-weight: 500;">长按识别二维码支付</div>
+        <div style="font-size: 14px; color: var(--ink-light); margin-bottom: 10px; font-weight: 500;" id="pay-qr-title">如需二维码，可长按识别支付</div>
         <div class="pay-qr-wrapper">
-          <img id="pay-qr-img" src="img/wechat_qr.jpg" alt="支付二维码">
+          <img id="pay-qr-img" src="" alt="支付二维码" class="hidden">
+          <div class="pay-qr-loading" id="pay-qr-loading">
+            <div class="pay-spinner"></div>
+          </div>
         </div>
       </div>
       <div class="pay-price">¥19.90</div>
-      <div class="pay-open-hint" id="pay-open-hint">默认金额 19.9 元，可使用微信扫码支付到你当前的微信收款码。</div>
-      <button class="pay-open-btn" id="pay-open-btn" type="button">打开微信支付</button>
+      <div class="pay-open-hint" id="pay-open-hint">系统会根据当前环境自动选择更适合的支付方式。</div>
+      <button class="pay-open-btn" id="pay-open-btn" type="button">打开支付</button>
       <div class="pay-order-info">
         <div class="pay-order-label">订单号</div>
         <div class="pay-order-no" id="pay-order-no">—</div>
-        <div class="pay-order-hint">支付后点击下方按钮即可解锁；如果后台已确认，也会自动解锁。</div>
+        <div class="pay-order-hint" id="pay-order-hint">支付完成后系统会自动轮询到账状态，到账后即可解锁深度解析。</div>
       </div>
       <div class="pay-steps">
         <div class="pay-step">
           <div class="pay-step-num">1</div>
-          <div>扫码支付 ¥19.90</div>
+          <div id="pay-step-one">创建订单并拉起支付</div>
         </div>
         <div class="pay-step">
           <div class="pay-step-num">2</div>
-          <div>支付完成后点击按钮，立即进入深度解析</div>
+          <div id="pay-step-two">支付成功后自动发放一次性解锁凭证</div>
         </div>
       </div>
-      <button class="pay-confirm-btn" id="pay-confirm-btn" type="button">我已支付，解锁深度解析</button>
+      <button class="pay-confirm-btn" id="pay-confirm-btn" type="button">我已支付，立即检查</button>
     </div>
   </div>
 </div>
@@ -553,7 +557,7 @@
   </div>
 </div>
 
-<script type="module" src="./assets/scripts/pages/index.js?v=15"></script>
+<script type="module" src="./assets/scripts/pages/index.js?v=18"></script>
 </body>
 </html>
 
