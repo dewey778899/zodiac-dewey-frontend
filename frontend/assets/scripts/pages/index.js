@@ -85,12 +85,44 @@ function clone(value) {
 
 const stateByTheme = clone(DEFAULT_STATE);
 
+function safeText(value, fallback) {
+  return value == null ? (fallback || "") : String(value);
+}
+
+function replaceAllText(value, search, replacement) {
+  return safeText(value).split(search).join(replacement);
+}
+
+function padStart2(value) {
+  value = String(value);
+  return value.length >= 2 ? value : `0${value}`;
+}
+
+function closestBySelector(element, selector) {
+  if (!element) return null;
+  if (typeof element.closest === "function") return element.closest(selector);
+  let current = element;
+  while (current) {
+    if (current.matches && current.matches(selector)) return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+  return replaceAllText(
+    replaceAllText(
+      replaceAllText(
+        replaceAllText(safeText(value), "&", "&amp;"),
+        "<",
+        "&lt;"
+      ),
+      ">",
+      "&gt;"
+    ),
+    '"',
+    "&quot;"
+  );
 }
 
 async function api(path, options = {}) {
@@ -115,12 +147,13 @@ function setThemeState(theme, personKey, patch) {
 
 function getSlideControls(theme, personKey) {
   const slide = getThemeSlide(theme);
-  const section = slide?.querySelector(`.person-section [data-person="${personKey}"]`)?.closest(".person-section");
+  const personNode = slide ? slide.querySelector(`.person-section [data-person="${personKey}"]`) : null;
+  const section = closestBySelector(personNode, ".person-section");
   if (!section) return null;
   return {
     section,
     name: section.querySelector(`[data-person="${personKey}"][data-field="name"]`),
-    genderButtons: [...section.querySelectorAll(`.gender-btn[data-person="${personKey}"]`)],
+    genderButtons: Array.prototype.slice.call(section.querySelectorAll(`.gender-btn[data-person="${personKey}"]`)),
     year: section.querySelector(`[data-person="${personKey}"][data-field="birthYear"]`),
     month: section.querySelector(`[data-person="${personKey}"][data-field="birthMonth"]`),
     day: section.querySelector(`[data-person="${personKey}"][data-field="birthDay"]`),
@@ -132,7 +165,7 @@ function getSlideControls(theme, personKey) {
 }
 
 function pad2(value) {
-  return String(value).padStart(2, "0");
+  return padStart2(value);
 }
 
 function parseBirthDate(birthDate) {
@@ -160,17 +193,17 @@ function buildCityIndex(raw) {
     const cityMap = map.get(province);
     if (!cityMap.has(city)) cityMap.set(city, []);
     const districts = cityMap.get(city);
-    if (!districts.includes(district)) districts.push(district);
+    if (districts.indexOf(district) === -1) districts.push(district);
   });
   return map;
 }
 
 function getProvinces() {
-  return [...cityIndex.keys()];
+  return Array.from(cityIndex.keys());
 }
 
 function getCities(province) {
-  return province && cityIndex.has(province) ? [...cityIndex.get(province).keys()] : [];
+  return province && cityIndex.has(province) ? Array.from(cityIndex.get(province).keys()) : [];
 }
 
 function getDistricts(province, city) {
@@ -182,7 +215,7 @@ function populateSelect(select, items, placeholder, selectedValue = "") {
   select.innerHTML = [`<option value="">${placeholder}</option>`]
     .concat(items.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`))
     .join("");
-  select.value = selectedValue && items.includes(selectedValue) ? selectedValue : "";
+  select.value = selectedValue && items.indexOf(selectedValue) !== -1 ? selectedValue : "";
   select.classList.toggle("is-selected", Boolean(select.value));
 }
 
@@ -232,7 +265,7 @@ function renderPerson(theme, personKey) {
 function adjustThemeIndicator() {
   const nav = $("theme-nav");
   const indicator = $("theme-tab-indicator");
-  const activeTab = nav?.querySelector(`.theme-tab[data-theme="${activeTheme}"]`);
+  const activeTab = nav ? nav.querySelector(`.theme-tab[data-theme="${activeTheme}"]`) : null;
   if (!nav || !indicator || !activeTab) return;
   indicator.style.width = `${activeTab.offsetWidth}px`;
   indicator.style.transform = `translateX(${activeTab.offsetLeft}px)`;
@@ -260,11 +293,13 @@ function renderTheme(theme) {
     button.classList.toggle("active", button.dataset.theme === activeTheme);
   });
   document.querySelectorAll(".slide-title").forEach((el) => {
-    const themeCode = el.closest(".form-slide")?.dataset.theme;
+    const slide = closestBySelector(el, ".form-slide");
+    const themeCode = slide && slide.dataset ? slide.dataset.theme : "";
     if (themeCode) el.textContent = THEME_COPY[themeCode].slideTitle;
   });
   document.querySelectorAll(".slide-sub").forEach((el) => {
-    const themeCode = el.closest(".form-slide")?.dataset.theme;
+    const slide = closestBySelector(el, ".form-slide");
+    const themeCode = slide && slide.dataset ? slide.dataset.theme : "";
     if (themeCode) el.textContent = THEME_COPY[themeCode].slideSub;
   });
   renderPerson(activeTheme, "a");
@@ -305,9 +340,9 @@ function closeModal(id) {
 }
 
 function switchPage(page) {
-  $("page-form")?.classList.toggle("hidden", page !== "form");
-  $("page-loading")?.classList.toggle("hidden", page !== "loading");
-  $("page-report")?.classList.toggle("hidden", page !== "report");
+  if ($("page-form")) $("page-form").classList.toggle("hidden", page !== "form");
+  if ($("page-loading")) $("page-loading").classList.toggle("hidden", page !== "loading");
+  if ($("page-report")) $("page-report").classList.toggle("hidden", page !== "report");
 }
 
 function renderLoadingSteps(activeIndex) {
@@ -315,7 +350,7 @@ function renderLoadingSteps(activeIndex) {
   if (!container) return;
   container.innerHTML = LOADING_STEPS.map((step, index) => {
     const state = index < activeIndex ? "completed" : index === activeIndex ? "active" : "pending";
-    const mark = index < activeIndex ? "✓" : String(index + 1).padStart(2, "0");
+    const mark = index < activeIndex ? "✓" : padStart2(index + 1);
     const sub = state === "completed" ? "已完成" : state === "active" ? "处理中..." : "等待执行";
     return `<div class="loading-step ${state}"><div class="loading-step-status">${mark}</div><div class="loading-step-copy"><div class="loading-step-title">${escapeHtml(step)}</div><div class="loading-step-sub">${sub}</div></div></div>`;
   }).join("");
@@ -402,8 +437,8 @@ function buildPersonPayload(person, fallbackName) {
     birthDate: person.birthDate,
     birthTime: person.birthTime || "12:30",
     birthPlace,
-    birthLatitude: coords?.lat ?? null,
-    birthLongitude: coords?.lng ?? null,
+    birthLatitude: coords ? coords.lat : null,
+    birthLongitude: coords ? coords.lng : null,
     birthTimezone: "Asia/Shanghai"
   };
 }
@@ -448,8 +483,10 @@ function setPayStatus(text, success = false) {
 }
 
 async function submitDouyinUnlock() {
-  const douyinName = $("douyin-name-input")?.value.trim() || "";
-  const confirmedFollowed = Boolean($("douyin-followed-check")?.checked);
+  const douyinInput = $("douyin-name-input");
+  const followCheck = $("douyin-followed-check");
+  const douyinName = douyinInput ? douyinInput.value.trim() : "";
+  const confirmedFollowed = Boolean(followCheck && followCheck.checked);
   if (!douyinName) throw new Error("请先填写抖音名");
   if (!confirmedFollowed) throw new Error("请先确认已关注抖音账号");
   const clientContext = getClientContext();
@@ -481,30 +518,30 @@ function formatTriplet(info) {
 }
 
 function chapterEmoji(index) {
-  return String(index + 1).padStart(2, "0");
+  return padStart2(index + 1);
 }
 
 function renderReport(response) {
   latestReport = response;
   const themeCopy = THEME_COPY[slugTheme(response.reportType)];
-  $("cover-title-cn").textContent = themeCopy?.coverTitleCn || "深度报告";
-  $("cover-title-en").textContent = themeCopy?.coverTitleEn || "Premium Reading";
-  $("cover-score").textContent = response.score ?? "--";
-  $("cover-score-label").textContent = themeCopy?.scoreLabel || "REPORT INDEX";
+  $("cover-title-cn").textContent = themeCopy && themeCopy.coverTitleCn ? themeCopy.coverTitleCn : "深度报告";
+  $("cover-title-en").textContent = themeCopy && themeCopy.coverTitleEn ? themeCopy.coverTitleEn : "Premium Reading";
+  $("cover-score").textContent = response.score == null ? "--" : response.score;
+  $("cover-score-label").textContent = themeCopy && themeCopy.scoreLabel ? themeCopy.scoreLabel : "REPORT INDEX";
   $("cover-type").textContent = response.relationshipType || "关系洞察";
   $("cover-tagline").textContent = response.tagline || "愿你更了解自己，也更从容地做选择。";
   $("cover-id").textContent = buildReportId(response.reportUid);
   $("cover-date").textContent = new Date().toLocaleDateString("zh-CN");
-  $("cover-person-a").textContent = response.personA?.name || stateByTheme[activeTheme].a.name || "我";
-  $("cover-zodiac-a-name").textContent = (response.zodiacA?.sun || "SUN").toUpperCase();
+  $("cover-person-a").textContent = (response.personA && response.personA.name) || stateByTheme[activeTheme].a.name || "我";
+  $("cover-zodiac-a-name").textContent = (((response.zodiacA && response.zodiacA.sun) || "SUN")).toUpperCase();
   $("cover-zodiac-a-icon").textContent = "✦";
 
   const isLove = response.reportType === "love";
   $("cover-zodiac-b-block").style.display = isLove ? "" : "none";
   $("cover-heart").style.display = isLove ? "" : "none";
   if (isLove) {
-    $("cover-person-b").textContent = response.personB?.name || stateByTheme[activeTheme].b.name || "TA";
-    $("cover-zodiac-b-name").textContent = (response.zodiacB?.sun || "MOON").toUpperCase();
+    $("cover-person-b").textContent = (response.personB && response.personB.name) || stateByTheme[activeTheme].b.name || "TA";
+    $("cover-zodiac-b-name").textContent = (((response.zodiacB && response.zodiacB.sun) || "MOON")).toUpperCase();
     $("cover-zodiac-b-icon").textContent = "✦";
   }
 
@@ -514,8 +551,8 @@ function renderReport(response) {
       <div class="chapter-title">星盘重点</div>
     </div>
     <div class="chapter-body">
-      <strong>${escapeHtml(response.personA?.name || "我")}</strong>：${escapeHtml(formatTriplet(response.zodiacA))}
-      ${isLove ? `<br><strong>${escapeHtml(response.personB?.name || "TA")}</strong>：${escapeHtml(formatTriplet(response.zodiacB))}` : ""}
+      <strong>${escapeHtml((response.personA && response.personA.name) || "我")}</strong>：${escapeHtml(formatTriplet(response.zodiacA))}
+      ${isLove ? `<br><strong>${escapeHtml((response.personB && response.personB.name) || "TA")}</strong>：${escapeHtml(formatTriplet(response.zodiacB))}` : ""}
     </div>
   `;
 
@@ -526,13 +563,13 @@ function renderReport(response) {
         <div class="chapter-emoji">${escapeHtml(chapter.emoji || "✦")}</div>
         <div class="chapter-title">${escapeHtml(chapter.title || `章节 ${index + 1}`)}</div>
       </div>
-      <div class="chapter-body">${escapeHtml(chapter.content || "").replaceAll("\n", "<br>")}</div>
+      <div class="chapter-body">${replaceAllText(escapeHtml(chapter.content || ""), "\n", "<br>")}</div>
     </div>
   `).join("");
 
   $("essence-list").innerHTML = (response.essence || []).map((item, index) => `
     <li class="essence-item">
-      <div class="essence-item-num">${String(index + 1).padStart(2, "0")}</div>
+      <div class="essence-item-num">${padStart2(index + 1)}</div>
       <div class="essence-item-text">${escapeHtml(item)}</div>
     </li>
   `).join("");
@@ -599,13 +636,14 @@ async function enterPremiumReport() {
 function renderSharePreview() {
   const preview = $("share-preview");
   if (!preview) return;
-  const title = latestReport?.reportType === "love" ? "爱情合盘" : latestReport?.reportType === "career" ? "事业报告" : "财运报告";
+  const reportType = latestReport ? latestReport.reportType : "";
+  const title = reportType === "love" ? "爱情合盘" : reportType === "career" ? "事业报告" : "财运报告";
   preview.innerHTML = `
     <div style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:20px;background:#fff;">
       <div style="font-size:12px;letter-spacing:.12em;color:#9b7fc7;margin-bottom:8px;">XIAODENG REPORT</div>
       <div style="font-size:28px;font-weight:700;color:#222;margin-bottom:8px;">${escapeHtml(title || "星盘报告")}</div>
-      <div style="font-size:16px;color:#555;margin-bottom:12px;">${escapeHtml(latestReport?.relationshipType || "专属解析")}</div>
-      <div style="font-size:42px;font-weight:700;color:#ff8b7a;">${escapeHtml(String(latestReport?.score ?? "--"))}</div>
+      <div style="font-size:16px;color:#555;margin-bottom:12px;">${escapeHtml((latestReport && latestReport.relationshipType) || "专属解析")}</div>
+      <div style="font-size:42px;font-weight:700;color:#ff8b7a;">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</div>
     </div>
   `;
 }
@@ -618,8 +656,8 @@ function bindFormEvents() {
   document.querySelectorAll(".person-input, .person-select").forEach((element) => {
     const eventName = element.tagName === "SELECT" || element.type === "time" ? "change" : "input";
     element.addEventListener(eventName, () => {
-      const slide = element.closest(".form-slide");
-      const theme = slide?.dataset.theme;
+      const slide = closestBySelector(element, ".form-slide");
+      const theme = slide && slide.dataset ? slide.dataset.theme : "";
       const personKey = element.dataset.person;
       const field = element.dataset.field;
       if (!theme || !personKey || !field) return;
@@ -641,7 +679,8 @@ function bindFormEvents() {
 
   document.querySelectorAll(".gender-btn").forEach((button) => {
     button.addEventListener("click", () => {
-      const theme = button.closest(".form-slide")?.dataset.theme;
+      const slide = closestBySelector(button, ".form-slide");
+      const theme = slide && slide.dataset ? slide.dataset.theme : "";
       const personKey = button.dataset.person;
       if (!theme || !personKey) return;
       setThemeState(theme, personKey, { gender: button.dataset.value });
@@ -660,35 +699,35 @@ function bindFormEvents() {
     });
   });
 
-  $("submit-btn")?.addEventListener("click", handleSubmit);
-  $("share-close")?.addEventListener("click", () => closeModal("share-modal"));
-  $("pay-modal-close")?.addEventListener("click", () => closeModal("pay-modal"));
-  $("value-modal-close")?.addEventListener("click", () => closeModal("value-modal"));
-  $("city-picker-close")?.addEventListener("click", () => closeModal("city-picker-modal"));
-  $("value-modal-pay-btn")?.addEventListener("click", beginPremiumFlow);
-  $("value-modal-free-btn")?.addEventListener("click", () => {
+  if ($("submit-btn")) $("submit-btn").addEventListener("click", handleSubmit);
+  if ($("share-close")) $("share-close").addEventListener("click", () => closeModal("share-modal"));
+  if ($("pay-modal-close")) $("pay-modal-close").addEventListener("click", () => closeModal("pay-modal"));
+  if ($("value-modal-close")) $("value-modal-close").addEventListener("click", () => closeModal("value-modal"));
+  if ($("city-picker-close")) $("city-picker-close").addEventListener("click", () => closeModal("city-picker-modal"));
+  if ($("value-modal-pay-btn")) $("value-modal-pay-btn").addEventListener("click", beginPremiumFlow);
+  if ($("value-modal-free-btn")) $("value-modal-free-btn").addEventListener("click", () => {
     setModel("deepseek");
     closeModal("value-modal");
   });
-  $("pay-confirm-btn")?.addEventListener("click", enterPremiumReport);
-  $("restart-btn")?.addEventListener("click", () => {
+  if ($("pay-confirm-btn")) $("pay-confirm-btn").addEventListener("click", enterPremiumReport);
+  if ($("restart-btn")) $("restart-btn").addEventListener("click", () => {
     latestReport = null;
     switchPage("form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-  $("copy-link-btn")?.addEventListener("click", async () => {
+  if ($("copy-link-btn")) $("copy-link-btn").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(location.href);
       showFormError("链接已复制");
       setTimeout(() => showFormError(""), 1500);
     } catch {}
   });
-  $("share-btn")?.addEventListener("click", () => {
+  if ($("share-btn")) $("share-btn").addEventListener("click", () => {
     renderSharePreview();
     openModal("share-modal");
   });
-  $("share-download")?.addEventListener("click", () => window.print());
-  $("pdf-btn")?.addEventListener("click", () => window.print());
+  if ($("share-download")) $("share-download").addEventListener("click", () => window.print());
+  if ($("pdf-btn")) $("pdf-btn").addEventListener("click", () => window.print());
 
   document.addEventListener("click", (event) => {
     const target = event.target;
