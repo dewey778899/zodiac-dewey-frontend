@@ -17,6 +17,7 @@ let totalPages = 0;
 let orderPage = 0;
 let orderStatus = "PAYING";
 let orderTotalPages = 0;
+let unlockTotalPages = 0;
 
 function $(id) {
   return document.getElementById(id);
@@ -298,6 +299,40 @@ function renderLogs(logs) {
   `).join("");
 }
 
+function formatReportType(reportType) {
+  if (reportType === "career") return "事业";
+  if (reportType === "wealth") return "财运";
+  return "爱情";
+}
+
+function renderUnlocks(result) {
+  unlockTotalPages = result.totalPages || 0;
+  if (!result.content || result.content.length === 0) {
+    $("unlock-body").innerHTML = "";
+    $("unlock-empty").classList.remove("hidden");
+    return;
+  }
+
+  $("unlock-empty").classList.add("hidden");
+  $("unlock-body").innerHTML = result.content.map((item) => `
+    <tr>
+      <td>${item.id ?? ""}</td>
+      <td>${item.source || "-"}</td>
+      <td>${item.douyinName || "-"}</td>
+      <td>${formatReportType(item.reportType)}</td>
+      <td>${item.confirmedFollowed ? "是" : "否"}</td>
+      <td>${tokenPill(item.tokenConsumed)}</td>
+      <td>${formatTime(item.createdAt)}</td>
+      <td>${formatTime(item.tokenConsumedAt)}</td>
+    </tr>
+  `).join("");
+}
+
+async function loadUnlocks() {
+  const result = await api("/api/admin/premium-unlocks?page=0&size=50");
+  renderUnlocks(result);
+}
+
 async function loadOrders() {
   const statusParam = orderStatus ? `&status=${orderStatus}` : "";
   const result = await api(`/api/admin/orders?page=${orderPage}&size=20${statusParam}`);
@@ -324,7 +359,7 @@ async function login() {
     localStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
     $("login-status").textContent = `登录有效期到 ${(data.expiresAt || "").replace("T", " ").slice(0, 16)}`;
     setView(true);
-    await Promise.all([loadOverview(), loadReports(), loadOrders(), loadOrderCount()]);
+    await Promise.all([loadOverview(), loadReports(), loadOrders(), loadOrderCount(), loadUnlocks()]);
   } catch (e) {
     $("login-error").textContent = e.message;
   }
@@ -343,7 +378,7 @@ async function boot() {
   }
   try {
     setView(true);
-    await Promise.all([loadOverview(), loadReports(), loadOrders(), loadOrderCount()]);
+    await Promise.all([loadOverview(), loadReports(), loadOrders(), loadOrderCount(), loadUnlocks()]);
   } catch (e) {
     if (e.status === 401) {
       logout();
@@ -355,7 +390,7 @@ async function boot() {
 $("login-btn").addEventListener("click", login);
 $("logout-btn").addEventListener("click", logout);
 $("refresh-btn").addEventListener("click", async () => {
-  await Promise.all([loadOverview(), loadReports(), loadOrders(), loadOrderCount()]);
+  await Promise.all([loadOverview(), loadReports(), loadOrders(), loadOrderCount(), loadUnlocks()]);
 });
 $("search-btn").addEventListener("click", async () => {
   currentPage = 0;

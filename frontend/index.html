@@ -70,7 +70,7 @@
 
             <div class="model-switcher slide-model-switcher">
               <button type="button" class="model-option active" data-model="deepseek">免费版<span class="model-badge">· 基础解析</span></button>
-              <button type="button" class="model-option" data-model="claude">深度解析<span class="model-badge">· Opus 4.7</span></button>
+              <button type="button" class="model-option" data-model="claude">深度解析<span class="model-badge">· Opus 4.8</span></button>
             </div>
 
             <div class="person-section">
@@ -176,7 +176,7 @@
 
             <div class="model-switcher slide-model-switcher">
               <button type="button" class="model-option active" data-model="deepseek">免费版<span class="model-badge">· 基础解析</span></button>
-              <button type="button" class="model-option" data-model="claude">深度解析<span class="model-badge">· Opus 4.7</span></button>
+              <button type="button" class="model-option" data-model="claude">深度解析<span class="model-badge">· Opus 4.8</span></button>
             </div>
 
             <div class="person-section">
@@ -237,7 +237,7 @@
 
             <div class="model-switcher slide-model-switcher">
               <button type="button" class="model-option active" data-model="deepseek">免费版<span class="model-badge">· 基础解析</span></button>
-              <button type="button" class="model-option" data-model="claude">深度解析<span class="model-badge">· Opus 4.7</span></button>
+              <button type="button" class="model-option" data-model="claude">深度解析<span class="model-badge">· Opus 4.8</span></button>
             </div>
 
             <div class="person-section">
@@ -426,49 +426,41 @@
   </div>
 </div>
 
-<!-- Payment Modal -->
+<!-- Premium Unlock Modal -->
 <div class="pay-modal-overlay hidden" id="pay-modal">
   <div class="pay-modal">
     <div class="pay-modal-header">
       <button class="pay-modal-close" id="pay-modal-close">✕</button>
       <div class="pay-modal-icon">✨</div>
-      <div class="pay-modal-title">升级深度解析</div>
-      <div class="pay-modal-subtitle">Claude 4.7 · 目前最强 AI 占星引擎</div>
+      <div class="pay-modal-title">关注抖音解锁深度解析</div>
+      <div class="pay-modal-subtitle">Opus 4.8 深度解析体验</div>
     </div>
     <div class="pay-modal-body">
-      <div class="pay-tab-group">
-        <div class="pay-tab active" data-pay-method="wechat" id="pay-tab-wechat">微信支付</div>
-        <div class="pay-tab" data-pay-method="alipay" id="pay-tab-alipay">支付宝</div>
-      </div>
-      <div class="pay-status-text" id="pay-status-text">正在准备支付订单...</div>
-      <div class="pay-qr-area">
-        <div style="font-size: 14px; color: var(--ink-light); margin-bottom: 10px; font-weight: 500;" id="pay-qr-title">如需二维码，可长按识别支付</div>
-        <div class="pay-qr-wrapper">
-          <img id="pay-qr-img" src="" alt="支付二维码" class="hidden">
-          <div class="pay-qr-loading" id="pay-qr-loading">
-            <div class="pay-spinner"></div>
-          </div>
+      <div class="pay-status-text" id="pay-status-text">先去抖音关注，再回来填写信息即可立即解锁。</div>
+      <div class="pay-qr-area" style="text-align:left;">
+        <div style="font-size: 14px; color: var(--ink-light); margin-bottom: 10px; font-weight: 500;" id="pay-qr-title">抖音账号</div>
+        <div class="pay-price" style="margin:0 0 12px; font-size:26px;">小登哥♏️♐</div>
+        <div class="pay-open-hint" id="pay-open-hint" style="margin-bottom:14px;">关注完成后，填写你的抖音名并确认“我已关注”，系统会直接发放一次深度解析凭证。</div>
+        <div class="field" style="margin-bottom: 14px;">
+          <label class="field-label" for="douyin-name-input">抖音名</label>
+          <input class="input" id="douyin-name-input" type="text" maxlength="40" placeholder="例如：小王已关注">
         </div>
-      </div>
-      <div class="pay-price">¥19.90</div>
-      <div class="pay-open-hint" id="pay-open-hint">系统会根据当前环境自动选择更适合的支付方式。</div>
-      <button class="pay-open-btn" id="pay-open-btn" type="button">打开支付</button>
-      <div class="pay-order-info">
-        <div class="pay-order-label">订单号</div>
-        <div class="pay-order-no" id="pay-order-no">—</div>
-        <div class="pay-order-hint" id="pay-order-hint">支付完成后系统会自动轮询到账状态，到账后即可解锁深度解析。</div>
+        <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink);margin-bottom:14px;cursor:pointer;">
+          <input id="douyin-followed-check" type="checkbox" style="width:18px;height:18px;">
+          <span>我已关注抖音账号</span>
+        </label>
       </div>
       <div class="pay-steps">
         <div class="pay-step">
           <div class="pay-step-num">1</div>
-          <div id="pay-step-one">创建订单并拉起支付</div>
+          <div id="pay-step-one">前往抖音关注 `小登哥♏️♐`</div>
         </div>
         <div class="pay-step">
           <div class="pay-step-num">2</div>
-          <div id="pay-step-two">支付成功后自动发放一次性解锁凭证</div>
+          <div id="pay-step-two">填写抖音名后立即自动解锁一次深度解析</div>
         </div>
       </div>
-      <button class="pay-confirm-btn" id="pay-confirm-btn" type="button">我已支付，立即检查</button>
+      <button class="pay-confirm-btn" id="pay-confirm-btn" type="button">提交并解锁深度解析</button>
     </div>
   </div>
 </div>
@@ -480,7 +472,7 @@
       <button class="pay-modal-close" id="value-modal-close">✕</button>
       <div class="pay-modal-icon">🔮</div>
       <div class="pay-modal-title">为什么选择深度解析</div>
-      <div class="pay-modal-subtitle">更完整的专业解读体验</div>
+      <div class="pay-modal-subtitle">Opus 4.8 深度解析体验</div>
     </div>
     <div class="pay-modal-body">
       <div style="text-align: left; margin: 20px 0;">
@@ -521,7 +513,7 @@
         </div>
       </div>
       <div style="display: flex; gap: 12px; margin-top: 8px;">
-        <button class="pay-confirm-btn" id="value-modal-pay-btn" style="flex: 1; background: linear-gradient(135deg, #ff8b7a, #9b7fc7);">¥19.90 解锁深度解析</button>
+        <button class="pay-confirm-btn" id="value-modal-pay-btn" style="flex: 1; background: linear-gradient(135deg, #ff8b7a, #9b7fc7);">去解锁深度解析</button>
         <button class="pay-confirm-btn" id="value-modal-free-btn" style="flex: 1; background: #f0f0f0; color: var(--ink-light);">先用免费版</button>
       </div>
     </div>
@@ -557,7 +549,7 @@
   </div>
 </div>
 
-<script type="module" src="./assets/scripts/pages/index.js?v=18"></script>
+<script type="module" src="./assets/scripts/pages/index.js?v=19"></script>
 </body>
 </html>
 

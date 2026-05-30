@@ -9,14 +9,12 @@ const API_BASE = (() => {
   return "";
 })();
 
-const CITY_DATA_URL = "./assets/data/birth-place-coordinates.json";
+const CITY_DATA_URL = "/assets/data/birth-place-coordinates.json";
 const YEARS = { start: 1975, end: 2005 };
 const DEFAULT_BIRTH_DATE = { year: "1990", month: "06", day: "15" };
 const THEMES = ["love", "career", "wealth"];
 const THEME_SLIDES = { love: 0, career: 1, wealth: 2 };
-const PAY_AMOUNT_FEN = 1990;
-const PAY_POLL_INTERVAL_MS = 3000;
-const PAY_POLL_TIMEOUT_MS = 180000;
+const LOADING_STEPS = ["校对出生信息", "生成星盘结构", "解析关系能量", "整理最终报告"];
 
 const THEME_COPY = {
   love: {
@@ -51,13 +49,6 @@ const THEME_COPY = {
   }
 };
 
-const LOADING_STEPS = [
-  "校对出生信息",
-  "生成星盘结构",
-  "解析关系能量",
-  "整理最终报告"
-];
-
 const DEFAULT_STATE = {
   love: {
     a: { name: "", gender: "male", birthDate: "1990-06-15", birthTime: "12:30", birthProvince: "", birthCity: "", birthDistrict: "" },
@@ -72,20 +63,12 @@ const DEFAULT_STATE = {
 };
 
 const paymentState = {
-  outTradeNo: "",
-  channel: "wechat",
-  scene: "",
-  status: "",
   accessToken: "",
-  payPayload: null,
-  expireAt: "",
-  pollTimer: null,
-  pollStartedAt: 0
+  unlockSource: "douyin_follow"
 };
 
 let activeTheme = "love";
 let activeModel = "deepseek";
-let activePayMethod = "wechat";
 let cityIndex = new Map();
 let cityCoordinateData = {};
 let currentLoadingTimer = null;
@@ -114,9 +97,7 @@ async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const resp = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    throw new Error(data.message || `请求失败 (${resp.status})`);
-  }
+  if (!resp.ok) throw new Error(data.message || `请求失败 (${resp.status})`);
   return data;
 }
 
@@ -134,8 +115,7 @@ function setThemeState(theme, personKey, patch) {
 
 function getSlideControls(theme, personKey) {
   const slide = getThemeSlide(theme);
-  if (!slide) return null;
-  const section = slide.querySelector(`.person-section [data-person="${personKey}"]`)?.closest(".person-section");
+  const section = slide?.querySelector(`.person-section [data-person="${personKey}"]`)?.closest(".person-section");
   if (!section) return null;
   return {
     section,
@@ -220,10 +200,10 @@ function refreshPlaceSelects(theme, personKey) {
   if (!controls) return;
   const person = getThemeState(theme, personKey);
   populateSelect(controls.province, getProvinces(), "省", person.birthProvince);
-  const cities = getCities(controls.province.value || person.birthProvince);
-  populateSelect(controls.city, cities, "市", person.birthCity);
-  const districts = getDistricts(controls.province.value || person.birthProvince, controls.city.value || person.birthCity);
-  populateSelect(controls.district, districts, "区/县", person.birthDistrict);
+  const province = controls.province.value || person.birthProvince;
+  populateSelect(controls.city, getCities(province), "市", person.birthCity);
+  const city = controls.city.value || person.birthCity;
+  populateSelect(controls.district, getDistricts(province, city), "区/县", person.birthDistrict);
   setThemeState(theme, personKey, {
     birthProvince: controls.province.value,
     birthCity: controls.city.value,
@@ -301,14 +281,6 @@ function setModel(model) {
   });
 }
 
-function updatePayMethodUI(method) {
-  activePayMethod = method === "alipay" ? "alipay" : "wechat";
-  paymentState.channel = activePayMethod;
-  document.querySelectorAll(".pay-tab").forEach((button) => {
-    button.classList.toggle("active", button.dataset.payMethod === activePayMethod);
-  });
-}
-
 function showFormError(message) {
   const box = $("form-error");
   if (!box) return;
@@ -344,7 +316,7 @@ function renderLoadingSteps(activeIndex) {
   container.innerHTML = LOADING_STEPS.map((step, index) => {
     const state = index < activeIndex ? "completed" : index === activeIndex ? "active" : "pending";
     const mark = index < activeIndex ? "✓" : String(index + 1).padStart(2, "0");
-    const sub = state === "completed" ? "已完成" : state === "active" ? "正在处理中..." : "等待执行";
+    const sub = state === "completed" ? "已完成" : state === "active" ? "处理中..." : "等待执行";
     return `<div class="loading-step ${state}"><div class="loading-step-status">${mark}</div><div class="loading-step-copy"><div class="loading-step-title">${escapeHtml(step)}</div><div class="loading-step-sub">${sub}</div></div></div>`;
   }).join("");
 }
@@ -391,17 +363,6 @@ function slugTheme(theme) {
   return "love";
 }
 
-function getClientContext() {
-  const ua = navigator.userAgent || "";
-  return {
-    deviceToken: localStorage.getItem("zodiac_device_token") || ensureDeviceToken(),
-    userAgent: ua,
-    source: location.href,
-    insideWechat: /MicroMessenger/i.test(ua),
-    mobile: /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
-  };
-}
-
 function ensureDeviceToken() {
   const existing = localStorage.getItem("zodiac_device_token");
   if (existing) return existing;
@@ -410,20 +371,15 @@ function ensureDeviceToken() {
   return token;
 }
 
-function inferWechatScene() {
+function getClientContext() {
   const ua = navigator.userAgent || "";
-  const insideWechat = /MicroMessenger/i.test(ua);
-  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
-  if (insideWechat) return "wechat_jsapi";
-  if (mobile) return "wechat_h5";
-  return "wechat_native";
-}
-
-function inferChannelAndScene() {
-  if (activePayMethod === "alipay") {
-    return { channel: "alipay", scene: "alipay_wap" };
-  }
-  return { channel: "wechat", scene: inferWechatScene() };
+  return {
+    deviceToken: ensureDeviceToken(),
+    userAgent: ua,
+    source: location.href,
+    insideWechat: /MicroMessenger/i.test(ua),
+    mobile: /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
+  };
 }
 
 function normalizeName(value, fallback) {
@@ -453,43 +409,35 @@ function buildPersonPayload(person, fallbackName) {
 }
 
 function buildCompatibilityPayload(model) {
-  const theme = slugTheme(activeTheme);
   const payload = {
     model,
-    reportType: theme,
-    personA: buildPersonPayload(stateByTheme[activeTheme].a, activeTheme === "love" ? "你" : "我的名字")
+    reportType: slugTheme(activeTheme),
+    personA: buildPersonPayload(stateByTheme[activeTheme].a, activeTheme === "love" ? "我" : "我的名字")
   };
   if (activeTheme === "love") {
-    payload.personB = buildPersonPayload(stateByTheme[activeTheme].b, "TA的名字");
+    payload.personB = buildPersonPayload(stateByTheme[activeTheme].b, "TA");
   }
-  if (model === "claude" && paymentState.accessToken) {
-    payload.accessToken = paymentState.accessToken;
-  }
+  if (model === "claude" && paymentState.accessToken) payload.accessToken = paymentState.accessToken;
   return payload;
 }
 
 function validateCurrentForm() {
   const a = stateByTheme[activeTheme].a;
   if (!a.name.trim()) return "请先填写名字";
-  if (!a.birthProvince || !a.birthCity || !a.birthDistrict) return "请完整选择出生城市";
+  if (!a.birthProvince || !a.birthCity || !a.birthDistrict) return "请完整选择出生地";
   if (activeTheme === "love") {
     const b = stateByTheme[activeTheme].b;
     if (!b.name.trim()) return "请先填写 TA 的名字";
-    if (!b.birthProvince || !b.birthCity || !b.birthDistrict) return "请完整选择 TA 的出生城市";
+    if (!b.birthProvince || !b.birthCity || !b.birthDistrict) return "请完整选择 TA 的出生地";
+    if ((a.gender || "").toLowerCase() === (b.gender || "").toLowerCase()) {
+      return "爱情合盘暂不支持同一性别组合，请选择一男一女";
+    }
   }
   return "";
 }
 
 function resetPaymentState() {
-  if (paymentState.pollTimer) clearInterval(paymentState.pollTimer);
-  paymentState.outTradeNo = "";
-  paymentState.scene = "";
-  paymentState.status = "";
   paymentState.accessToken = "";
-  paymentState.payPayload = null;
-  paymentState.expireAt = "";
-  paymentState.pollTimer = null;
-  paymentState.pollStartedAt = 0;
 }
 
 function setPayStatus(text, success = false) {
@@ -499,165 +447,37 @@ function setPayStatus(text, success = false) {
   el.classList.toggle("success", success);
 }
 
-function setPayLoading(loading) {
-  $("pay-qr-loading")?.classList.toggle("hidden", !loading);
-}
-
-function setPayQrImage(src) {
-  const img = $("pay-qr-img");
-  if (!img) return;
-  img.src = src || "";
-  img.classList.toggle("hidden", !src);
-}
-
-function renderPaymentModal(order) {
-  paymentState.outTradeNo = order.outTradeNo || "";
-  paymentState.status = order.status || "";
-  paymentState.channel = order.channel || activePayMethod;
-  paymentState.scene = order.scene || "";
-  paymentState.expireAt = order.expireAt || "";
-  paymentState.payPayload = order.payPayload || null;
-  $("pay-order-no").textContent = paymentState.outTradeNo || "—";
-  setPayLoading(false);
-  setPayQrImage("");
-
-  const payload = paymentState.payPayload || {};
-  const openBtn = $("pay-open-btn");
-  const hint = $("pay-open-hint");
-  const qrTitle = $("pay-qr-title");
-
-  if (paymentState.channel === "wechat") {
-    if (payload.mode === "JSAPI") {
-      openBtn.textContent = "打开微信支付";
-      hint.textContent = payload.mock ? "当前为本地模拟微信支付，可先点击按钮，再用后台补单完成测试。" : "当前处于微信内，将使用微信官方支付拉起。";
-      qrTitle.textContent = "微信内支付无需二维码";
-      setPayStatus("订单已创建，请点击按钮拉起微信支付");
-    } else if (payload.mode === "H5") {
-      openBtn.textContent = "打开微信支付";
-      hint.textContent = payload.mock ? "当前为本地模拟微信 H5 支付，可跳转后再用后台补单完成测试。" : "当前为手机浏览器，将跳转微信 H5 支付。";
-      qrTitle.textContent = "如果无法跳转，也可在电脑上使用二维码兜底";
-      setPayStatus("订单已创建，请点击按钮前往微信支付");
-    } else {
-      openBtn.textContent = "刷新微信支付二维码";
-      hint.textContent = payload.mock ? "当前为本地模拟微信二维码支付，可扫码占位后再用后台补单完成测试。" : "当前环境使用微信 Native 二维码支付。";
-      qrTitle.textContent = "请使用微信扫码支付";
-      if (payload.codeUrl) {
-        setPayQrImage(`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payload.codeUrl)}`);
-      }
-      setPayStatus("订单已创建，请扫码支付");
-    }
-  } else {
-    openBtn.textContent = "打开支付宝支付";
-    hint.textContent = payload.mock ? "当前为本地模拟支付宝支付，可打开后再用后台补单完成测试。" : "将通过支付宝 WAP 官方支付链路完成付款。";
-    qrTitle.textContent = "手机可直接打开支付宝，电脑端可用下方二维码兜底";
-    if (payload.payUrl) {
-      setPayQrImage(`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payload.payUrl)}`);
-    }
-    setPayStatus("订单已创建，请点击按钮前往支付宝支付");
-  }
-}
-
-async function createPaymentOrder() {
-  setPayLoading(true);
-  setPayStatus("正在创建支付订单...");
-  $("pay-order-no").textContent = "—";
-  const { channel, scene } = inferChannelAndScene();
-  const order = await api("/api/pay/orders", {
+async function submitDouyinUnlock() {
+  const douyinName = $("douyin-name-input")?.value.trim() || "";
+  const confirmedFollowed = Boolean($("douyin-followed-check")?.checked);
+  if (!douyinName) throw new Error("请先填写抖音名");
+  if (!confirmedFollowed) throw new Error("请先确认已关注抖音账号");
+  const clientContext = getClientContext();
+  setPayStatus("正在提交解锁信息...");
+  const result = await api("/api/premium/douyin-unlock", {
     method: "POST",
     body: JSON.stringify({
-      channel,
-      scene,
+      douyinName,
+      confirmedFollowed,
       reportType: slugTheme(activeTheme),
-      amountFen: PAY_AMOUNT_FEN,
-      subject: activeTheme === "love" ? "深度解析灵魂合盘" : activeTheme === "career" ? "深度解析事业报告" : "深度解析财运报告",
-      returnUrl: location.href,
-      clientContext: getClientContext()
+      deviceToken: clientContext.deviceToken,
+      clientContext: JSON.stringify(clientContext),
+      userAgent: navigator.userAgent || ""
     })
   });
-  renderPaymentModal(order);
-  startPollingPaymentStatus();
-}
-
-function stopPaymentPolling() {
-  if (paymentState.pollTimer) clearInterval(paymentState.pollTimer);
-  paymentState.pollTimer = null;
-}
-
-function startPollingPaymentStatus() {
-  stopPaymentPolling();
-  paymentState.pollStartedAt = Date.now();
-  paymentState.pollTimer = window.setInterval(async () => {
-    if (!paymentState.outTradeNo) return;
-    if (Date.now() - paymentState.pollStartedAt > PAY_POLL_TIMEOUT_MS) {
-      stopPaymentPolling();
-      setPayStatus("轮询超时，你支付完成后仍可点击“我已支付，立即检查”");
-      return;
-    }
-    try {
-      const status = await api(`/api/pay/orders/${paymentState.outTradeNo}`);
-      applyPaymentStatus(status);
-    } catch {}
-  }, PAY_POLL_INTERVAL_MS);
-}
-
-function applyPaymentStatus(status) {
-  paymentState.status = status.status || paymentState.status;
-  if (status.accessToken) paymentState.accessToken = status.accessToken;
-  if (status.paid && status.accessToken) {
-    stopPaymentPolling();
-    setPayStatus("支付成功，深度解析凭证已就绪", true);
-    $("pay-order-hint").textContent = "支付已到账，现在可以继续生成深度解析。";
-    $("pay-confirm-btn").textContent = "进入深度解析";
-  }
-}
-
-async function checkPaymentStatusNow() {
-  if (!paymentState.outTradeNo) {
-    throw new Error("请先创建支付订单");
-  }
-  const status = await api(`/api/pay/orders/${paymentState.outTradeNo}`);
-  applyPaymentStatus(status);
-  if (!status.paid || !status.accessToken) {
-    throw new Error("订单仍未支付成功，请完成支付后再试");
-  }
-}
-
-async function openPaymentGateway() {
-  const payload = paymentState.payPayload || {};
-  if (paymentState.channel === "wechat") {
-    if (payload.mode === "JSAPI") {
-      setPayStatus("微信 JSAPI 参数已生成，请在正式微信环境中拉起支付");
-      return;
-    }
-    if (payload.mwebUrl) {
-      window.location.href = payload.mwebUrl;
-      return;
-    }
-    if (payload.codeUrl) {
-      setPayStatus("请使用微信扫码支付");
-      return;
-    }
-  }
-  if (paymentState.channel === "alipay" && payload.payUrl) {
-    window.location.href = payload.payUrl;
-    return;
-  }
-  throw new Error("当前支付方式尚未返回可用的支付入口");
+  if (!result.accessToken) throw new Error("解锁失败，请稍后重试");
+  paymentState.accessToken = result.accessToken;
+  setPayStatus(result.message || "已解锁深度解析", true);
 }
 
 function buildReportId(reportUid) {
   const core = String(reportUid || "").slice(-8).toUpperCase();
-  return `珍藏编号 · ZD-${core || "PREVIEW"}-OP47`;
-}
-
-function zodiacText(info) {
-  if (!info) return "—";
-  return [info.sun, info.moon, info.rising].filter(Boolean).join(" · ");
+  return `珍藏编号 · ZD-${core || "PREVIEW"}-OP48`;
 }
 
 function formatTriplet(info) {
-  if (!info) return "太阳 —｜月亮 —｜上升 —";
-  return `太阳 ${info.sun || "—"}｜月亮 ${info.moon || "—"}｜上升 ${info.rising || "—"}`;
+  if (!info) return "太阳 — / 月亮 — / 上升 —";
+  return `太阳 ${info.sun || "—"} · 月亮 ${info.moon || "—"} · 上升 ${info.rising || "—"}`;
 }
 
 function chapterEmoji(index) {
@@ -675,7 +495,7 @@ function renderReport(response) {
   $("cover-tagline").textContent = response.tagline || "愿你更了解自己，也更从容地做选择。";
   $("cover-id").textContent = buildReportId(response.reportUid);
   $("cover-date").textContent = new Date().toLocaleDateString("zh-CN");
-  $("cover-person-a").textContent = response.personA?.name || stateByTheme[activeTheme].a.name || "你";
+  $("cover-person-a").textContent = response.personA?.name || stateByTheme[activeTheme].a.name || "我";
   $("cover-zodiac-a-name").textContent = (response.zodiacA?.sun || "SUN").toUpperCase();
   $("cover-zodiac-a-icon").textContent = "✦";
 
@@ -690,11 +510,11 @@ function renderReport(response) {
 
   $("zodiac-details").innerHTML = `
     <div class="chapter-head">
-      <div class="chapter-emoji">✧</div>
+      <div class="chapter-emoji">✦</div>
       <div class="chapter-title">星盘重点</div>
     </div>
     <div class="chapter-body">
-      <strong>${escapeHtml(response.personA?.name || "你")}</strong>：${escapeHtml(formatTriplet(response.zodiacA))}
+      <strong>${escapeHtml(response.personA?.name || "我")}</strong>：${escapeHtml(formatTriplet(response.zodiacA))}
       ${isLove ? `<br><strong>${escapeHtml(response.personB?.name || "TA")}</strong>：${escapeHtml(formatTriplet(response.zodiacB))}` : ""}
     </div>
   `;
@@ -760,24 +580,34 @@ async function handleSubmit() {
 async function beginPremiumFlow() {
   closeModal("value-modal");
   resetPaymentState();
-  updatePayMethodUI(inferChannelAndScene().channel);
   openModal("pay-modal");
-  try {
-    await createPaymentOrder();
-  } catch (error) {
-    setPayLoading(false);
-    setPayStatus(error.message || "创建支付订单失败");
-  }
+  if ($("douyin-name-input")) $("douyin-name-input").value = "";
+  if ($("douyin-followed-check")) $("douyin-followed-check").checked = false;
+  setPayStatus("先去抖音关注，再回来填写信息即可立即解锁。");
 }
 
 async function enterPremiumReport() {
   try {
-    await checkPaymentStatusNow();
+    await submitDouyinUnlock();
     closeModal("pay-modal");
     await generateReport("claude");
   } catch (error) {
-    setPayStatus(error.message || "支付校验失败");
+    setPayStatus(error.message || "解锁校验失败");
   }
+}
+
+function renderSharePreview() {
+  const preview = $("share-preview");
+  if (!preview) return;
+  const title = latestReport?.reportType === "love" ? "爱情合盘" : latestReport?.reportType === "career" ? "事业报告" : "财运报告";
+  preview.innerHTML = `
+    <div style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:20px;background:#fff;">
+      <div style="font-size:12px;letter-spacing:.12em;color:#9b7fc7;margin-bottom:8px;">XIAODENG REPORT</div>
+      <div style="font-size:28px;font-weight:700;color:#222;margin-bottom:8px;">${escapeHtml(title || "星盘报告")}</div>
+      <div style="font-size:16px;color:#555;margin-bottom:12px;">${escapeHtml(latestReport?.relationshipType || "专属解析")}</div>
+      <div style="font-size:42px;font-weight:700;color:#ff8b7a;">${escapeHtml(String(latestReport?.score ?? "--"))}</div>
+    </div>
+  `;
 }
 
 function bindFormEvents() {
@@ -830,37 +660,15 @@ function bindFormEvents() {
     });
   });
 
-  document.querySelectorAll(".pay-tab").forEach((button) => {
-    button.addEventListener("click", async () => {
-      updatePayMethodUI(button.dataset.payMethod);
-      resetPaymentState();
-      try {
-        await createPaymentOrder();
-      } catch (error) {
-        setPayStatus(error.message || "创建支付订单失败");
-      }
-    });
-  });
-
   $("submit-btn")?.addEventListener("click", handleSubmit);
   $("share-close")?.addEventListener("click", () => closeModal("share-modal"));
-  $("pay-modal-close")?.addEventListener("click", () => {
-    stopPaymentPolling();
-    closeModal("pay-modal");
-  });
+  $("pay-modal-close")?.addEventListener("click", () => closeModal("pay-modal"));
   $("value-modal-close")?.addEventListener("click", () => closeModal("value-modal"));
   $("city-picker-close")?.addEventListener("click", () => closeModal("city-picker-modal"));
   $("value-modal-pay-btn")?.addEventListener("click", beginPremiumFlow);
   $("value-modal-free-btn")?.addEventListener("click", () => {
     setModel("deepseek");
     closeModal("value-modal");
-  });
-  $("pay-open-btn")?.addEventListener("click", async () => {
-    try {
-      await openPaymentGateway();
-    } catch (error) {
-      setPayStatus(error.message || "暂时无法打开支付入口");
-    }
   });
   $("pay-confirm-btn")?.addEventListener("click", enterPremiumReport);
   $("restart-btn")?.addEventListener("click", () => {
@@ -875,7 +683,11 @@ function bindFormEvents() {
       setTimeout(() => showFormError(""), 1500);
     } catch {}
   });
-  $("share-btn")?.addEventListener("click", () => openModal("share-modal"));
+  $("share-btn")?.addEventListener("click", () => {
+    renderSharePreview();
+    openModal("share-modal");
+  });
+  $("share-download")?.addEventListener("click", () => window.print());
   $("pdf-btn")?.addEventListener("click", () => window.print());
 
   document.addEventListener("click", (event) => {
@@ -910,7 +722,6 @@ async function init() {
     renderPerson(theme, "a");
     if (theme === "love") renderPerson(theme, "b");
   });
-  updatePayMethodUI(activePayMethod);
   setModel(activeModel);
   renderTheme(activeTheme);
   window.addEventListener("resize", () => {

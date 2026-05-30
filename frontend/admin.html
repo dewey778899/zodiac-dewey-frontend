@@ -80,6 +80,27 @@
         </div>
 
         <div class="card">
+          <h2 class="section-title">深度解锁记录</h2>
+          <p class="section-sub">这里会记录通过“关注抖音解锁”提交的深度解析凭证，方便后续回查是否已使用。</p>
+          <table class="report-table order-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>来源</th>
+                <th>抖音名</th>
+                <th>主题</th>
+                <th>已关注</th>
+                <th>Token 状态</th>
+                <th>提交时间</th>
+                <th>使用时间</th>
+              </tr>
+            </thead>
+            <tbody id="unlock-body"></tbody>
+          </table>
+          <div class="empty hidden" id="unlock-empty">暂无深度解锁记录</div>
+        </div>
+
+        <div class="card">
           <h2 class="section-title">最近 7 天趋势</h2>
           <p class="section-sub">重点关注模型点击、生成成功、订单创建和支付成功的变化节奏。</p>
           <table class="trend-table">
