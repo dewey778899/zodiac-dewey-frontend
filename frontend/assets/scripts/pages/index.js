@@ -330,9 +330,9 @@ function adjustSliderPosition() {
 }
 
 function adjustSliderHeight() {
-  const slides = $("form-slides");
+  const shell = document.querySelector(".form-slider-shell");
   const slide = getThemeSlide(activeTheme);
-  if (slides && slide) slides.style.height = `${slide.offsetHeight}px`;
+  if (shell && slide) shell.style.height = `${slide.offsetHeight}px`;
 }
 
 function renderTheme(theme) {
@@ -561,7 +561,11 @@ async function submitDouyinUnlock() {
 }
 
 function buildReportId(reportUid) {
-  return `\u73cd\u85cf\u7f16\u53f7 \u00b7 ${safeText(reportUid, "report")}`;
+  const value = safeText(reportUid, "Report");
+  return `
+    <span class="cover-meta-id-label">COLLECTOR CODE</span>
+    <span class="cover-meta-id-value">${escapeHtml(value)}</span>
+  `;
 }
 
 function formatTriplet(info) {
@@ -576,14 +580,15 @@ function chapterEmoji(index) {
 function renderReport(response) {
   latestReport = response;
   syncReportUrl(response.reportUid);
-  const themeCopy = THEME_COPY[slugTheme(response.reportType)];
+  const reportTheme = slugTheme(response.reportType);
+  const themeCopy = THEME_COPY[reportTheme];
   $("cover-title-cn").textContent = themeCopy && themeCopy.coverTitleCn ? themeCopy.coverTitleCn : "深度报告";
   $("cover-title-en").textContent = themeCopy && themeCopy.coverTitleEn ? themeCopy.coverTitleEn : "Premium Reading";
   $("cover-score").textContent = response.score == null ? "--" : response.score;
   $("cover-score-label").textContent = themeCopy && themeCopy.scoreLabel ? themeCopy.scoreLabel : "REPORT INDEX";
   $("cover-type").textContent = response.relationshipType || "关系洞察";
   $("cover-tagline").textContent = response.tagline || "愿你更了解自己，也更从容地做选择。";
-  $("cover-id").textContent = buildReportId(response.reportUid);
+  $("cover-id").innerHTML = buildReportId(response.reportUid);
   $("cover-date").textContent = new Date().toLocaleDateString("zh-CN");
   $("cover-person-a").textContent = (response.personA && response.personA.name) || stateByTheme[activeTheme].a.name || "我";
   $("cover-zodiac-a-name").textContent = (((response.zodiacA && response.zodiacA.sun) || "SUN")).toUpperCase();
@@ -627,7 +632,9 @@ function renderReport(response) {
     </li>
   `).join("");
 
-  $("action-bar-sub").textContent = response.reportType === "love" ? "珍藏这份属于你们的关系报告" : "珍藏这份属于你的专属报告";
+  $("action-bar-sub").textContent = response.reportType === "love"
+    ? "把这份只属于你们的关系答案，优雅地留存，也安心地分享给彼此。"
+    : "把这份只属于此刻的个人答案，安静收藏，也分享给真正懂你的人。";
 }
 
 async function loadSharedReportFromUrl() {
@@ -644,7 +651,7 @@ async function loadSharedReportFromUrl() {
   } catch (error) {
     stopLoadingAnimation(0);
     switchPage("form");
-    showFormError(error.message || "\u62a5\u544a\u52a0\u8f7d\u5931\u8d25");
+    showFormError(error.message || "报告加载失败");
     return false;
   }
 }
@@ -711,13 +718,21 @@ function renderSharePreview() {
   const reportType = latestReport ? latestReport.reportType : "";
   const title = reportType === "love" ? "爱情合盘" : reportType === "career" ? "事业报告" : "财运报告";
   const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
+  const reportId = latestReport && latestReport.reportUid ? latestReport.reportUid : "Report";
   preview.innerHTML = `
-    <div style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:20px;background:#fff;">
-      <div style="font-size:12px;letter-spacing:.12em;color:#9b7fc7;margin-bottom:8px;">XIAODENG REPORT</div>
-      <div style="font-size:28px;font-weight:700;color:#222;margin-bottom:8px;">${escapeHtml(title || "星盘报告")}</div>
-      <div style="font-size:16px;color:#555;margin-bottom:12px;">${escapeHtml((latestReport && latestReport.relationshipType) || "专属解析")}</div>
-      <div style="font-size:42px;font-weight:700;color:#ff8b7a;">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</div>
-      <div style="margin-top:14px;font-size:11px;line-height:1.6;color:#777;word-break:break-all;">${escapeHtml(shareUrl)}</div>
+    <div style="padding:22px;border:1px solid rgba(201,163,107,.22);border-radius:24px;background:linear-gradient(180deg,#fffdfa 0%,#fff6fb 100%);box-shadow:0 18px 40px rgba(155,127,199,.12);">
+      <div style="font-size:11px;letter-spacing:.28em;color:#b18b62;margin-bottom:10px;">XIAODENG ARCHIVE</div>
+      <div style="font-size:28px;font-weight:700;color:#2d2430;margin-bottom:8px;">${escapeHtml(title || "星盘报告")}</div>
+      <div style="font-size:15px;color:#6b4f60;margin-bottom:14px;">${escapeHtml((latestReport && latestReport.relationshipType) || "专属解析")}</div>
+      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;">
+        <div style="font-size:44px;font-weight:700;color:#ff8b7a;line-height:1;">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</div>
+        <div style="font-size:12px;letter-spacing:.18em;color:#9b7fc7;">REPORT SCORE</div>
+      </div>
+      <div style="padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.82);border:1px solid rgba(155,127,199,.16);margin-bottom:12px;">
+        <div style="font-size:10px;letter-spacing:.22em;color:#9a7a8d;margin-bottom:4px;">COLLECTOR CODE</div>
+        <div style="font-size:14px;font-weight:600;color:#3d2a35;word-break:break-all;">${escapeHtml(reportId)}</div>
+      </div>
+      <div style="font-size:11px;line-height:1.7;color:#8a7481;word-break:break-all;">${escapeHtml(shareUrl)}</div>
     </div>
   `;
 }
@@ -739,6 +754,34 @@ async function saveShareCardToAlbum() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+async function copyReportLink() {
+  const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
+  await navigator.clipboard.writeText(shareUrl);
+}
+
+async function openNativeShare() {
+  if (!latestReport || typeof navigator.share !== "function") return false;
+  const reportType = latestReport.reportType === "love"
+    ? "爱情合盘"
+    : latestReport.reportType === "career"
+      ? "事业报告"
+      : "财运报告";
+  const shareUrl = getReportShareUrl(latestReport.reportUid);
+  try {
+    await navigator.share({
+      title: `${reportType} · 小登哥`,
+      text: latestReport.tagline || "分享一份专属报告给你看看",
+      url: shareUrl
+    });
+    return true;
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      return true;
+    }
+    return false;
+  }
 }
 
 function bindFormEvents() {
@@ -808,32 +851,37 @@ function bindFormEvents() {
     switchPage("form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-  if ($("copy-link-btn")) $("copy-link-btn").addEventListener("click", async () => {
-    try {
-      const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
-      await navigator.clipboard.writeText(shareUrl);
-      showToast("\u5206\u4eab\u5730\u5740\u5df2\u590d\u5236");
-    } catch {}
-  });
-  if ($("share-btn")) $("share-btn").addEventListener("click", () => {
-    renderSharePreview();
-    openModal("share-modal");
+  if ($("share-btn")) $("share-btn").addEventListener("click", async () => {
+    const shared = await openNativeShare();
+    if (!shared) {
+      renderSharePreview();
+      openModal("share-modal");
+    }
   });
   if ($("share-download")) $("share-download").addEventListener("click", async () => {
     try {
+      renderSharePreview();
       await saveShareCardToAlbum();
-      showToast("\u5df2\u4fdd\u5b58\u5230\u76f8\u518c");
+      showToast("已保存到相册");
     } catch {
-      showToast("\u8bf7\u957f\u6309\u56fe\u7247\u4fdd\u5b58\u5230\u76f8\u518c");
+      showToast("请长按图片保存到相册");
+    }
+  });
+  if ($("share-copy-link")) $("share-copy-link").addEventListener("click", async () => {
+    try {
+      await copyReportLink();
+      showToast("分享链接已复制");
+    } catch {
+      showToast("复制分享链接失败，请稍后再试");
     }
   });
   if ($("pdf-btn")) $("pdf-btn").addEventListener("click", async () => {
     try {
-      const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
-      await navigator.clipboard.writeText(shareUrl);
-      showToast("\u5206\u4eab\u5730\u5740\u5df2\u590d\u5236\uff0c\u5feb\u53d1\u7ed9\u670b\u53cb\u770b\u770b");
+      renderSharePreview();
+      await saveShareCardToAlbum();
+      showToast("已保存到相册");
     } catch {
-      showToast("\u590d\u5236\u5206\u4eab\u5730\u5740\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5");
+      showToast("请长按图片保存到相册");
     }
   });
 

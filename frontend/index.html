@@ -6,7 +6,7 @@
 <meta name="format-detection" content="telephone=no">
 <title>灵魂合盘 · 你和 TA 的缘分密码 · 小登哥出品</title>
 
-<!-- 瀛椾綋:鎬濇簮瀹嬩綋(鎶ュ憡涓讳綋)+ 鐜夈伌銈囥倱(鏍囬瑁呴グ) -->
+<!-- 字体：Noto Serif SC + Cormorant Garamond -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
@@ -15,18 +15,18 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-<link rel="stylesheet" href="./assets/styles/pages/index.css?v=14">
+<link rel="stylesheet" href="./assets/styles/pages/index.css?v=15">
 </head>
 <body>
 
 
 
 <div class="bg-deco">
-  <div class="star" style="top: 15%; left: 8%; font-size: 14px;">鉁?</div>
-  <div class="star" style="top: 25%; right: 10%; font-size: 10px; animation-delay: 1s;">鉁?</div>
-  <div class="star" style="top: 60%; left: 12%; font-size: 12px; animation-delay: 2s;">鉁?</div>
-  <div class="star" style="top: 75%; right: 8%; font-size: 14px; animation-delay: 0.5s;">鉁?</div>
-  <div class="star" style="top: 40%; right: 15%; font-size: 10px; animation-delay: 1.5s;">鉁?</div>
+  <div class="star" style="top: 15%; left: 8%; font-size: 14px;">✦</div>
+  <div class="star" style="top: 25%; right: 10%; font-size: 10px; animation-delay: 1s;">✧</div>
+  <div class="star" style="top: 60%; left: 12%; font-size: 12px; animation-delay: 2s;">✦</div>
+  <div class="star" style="top: 75%; right: 8%; font-size: 14px; animation-delay: 0.5s;">✧</div>
+  <div class="star" style="top: 40%; right: 15%; font-size: 10px; animation-delay: 1.5s;">✦</div>
 </div>
 
 <div class="app">
@@ -318,7 +318,7 @@
   <!-- ============== Page 3: Report ============== -->
   <div id="page-report" class="page hidden">
     <div id="report-content">
-      <!-- 鎶ュ憡灏侀潰 -->
+      <!-- 报告封面 -->
       <div class="cover" id="cover">
         <div class="cover-corner tl"></div>
         <div class="cover-corner tr"></div>
@@ -360,19 +360,22 @@
         <div class="cover-tagline" id="cover-tagline">—</div>
 
         <div class="cover-meta">
-          <div class="cover-meta-id" id="cover-id">珍藏编号 · SASC-000000-PF4E</div>
+          <div class="cover-meta-id" id="cover-id">
+            <span class="cover-meta-id-label">COLLECTOR CODE</span>
+            <span class="cover-meta-id-value">WangXiaoMei-1780221327554</span>
+          </div>
           <div class="cover-meta-date" id="cover-date">— · — · —</div>
           <div class="cover-by">CREATED BY <span class="name">小登哥 · XIAODENG</span></div>
         </div>
       </div>
 
-      <!-- 绔犺妭 -->
-      <!-- 涓夊ぇ鏄熷骇璇︽儏(澶槼/鏈堜寒/涓婂崌) -->
+      <!-- 章节 -->
+      <!-- 星盘详情 -->
       <div class="zodiac-details" id="zodiac-details"></div>
 
       <div id="chapters-container"></div>
 
-      <!-- 绮惧崕鐩稿寤鸿 -->
+      <!-- 珍藏锦囊 -->
       <div class="essence" id="essence-section">
         <div class="essence-head">
           <div class="essence-head-icon">💎</div>
@@ -383,21 +386,20 @@
       </div>
     </div>
 
-    <!-- 鎿嶄綔鏍?-->
+    <!-- 操作区 -->
     <div class="action-bar">
-      <div class="action-bar-title">— KEEP IT FOREVER —</div>
-      <div class="action-bar-sub" id="action-bar-sub">珍藏这份报告，随时回来查看</div>
+      <div class="action-bar-title">ARCHIVE THE MOMENT</div>
+      <div class="action-bar-sub" id="action-bar-sub">把这份只属于此刻的答案，优雅地留给自己，也分享给重要的人。</div>
       <div class="action-grid">
         <button class="action-btn primary" id="share-btn">
-          <span class="action-btn-icon">📤</span>
-          <span>生成分享卡片</span>
+          <span class="action-btn-icon">↗</span>
+          <span>分享报告</span>
         </button>
         <button class="action-btn secondary" id="pdf-btn">
-          <span class="action-btn-icon">🔗</span>
-          <span>分享</span>
+          <span class="action-btn-icon">✦</span>
+          <span>保存分享卡</span>
         </button>
       </div>
-      <button class="restart-btn-full" id="copy-link-btn" style="border-style:solid;color:var(--lilac-deep);">🔗 复制报告链接</button>
       <button class="restart-btn-full" id="restart-btn">再测一次</button>
     </div>
 
@@ -413,16 +415,19 @@
 <div class="modal-overlay hidden" id="share-modal">
   <div class="modal">
       <div class="modal-head">
-        <div class="modal-title" id="share-modal-title">分享这张报告卡片</div>
-        <div class="modal-sub" id="share-modal-sub">长按图片可保存到相册</div>
+        <div class="modal-title" id="share-modal-title">分享这份珍藏报告</div>
+        <div class="modal-sub" id="share-modal-sub">若系统分享不可用，可先保存卡片或复制专属链接。</div>
     </div>
     <div class="modal-body">
       <div class="share-card-preview" id="share-preview"></div>
-      <div class="modal-actions">
-        <button class="modal-btn secondary" id="share-close">关闭</button>
+      <div class="share-modal-inline-actions">
+        <button class="modal-btn ghost" id="share-copy-link">复制链接</button>
         <button class="modal-btn primary" id="share-download">保存到相册</button>
       </div>
-      <div class="modal-tip">支持直接分享到微信/钉钉/QQ<br/>若无法分享，将自动下载图片，请长按保存到相册</div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" id="share-close">关闭</button>
+      </div>
+      <div class="modal-tip">支持系统分享至微信、QQ、钉钉等应用。若浏览器不支持系统分享，可改用复制链接或保存卡片。</div>
     </div>
   </div>
 </div>
@@ -550,7 +555,7 @@
   </div>
 </div>
 
-<script type="module" src="./assets/scripts/pages/index.js?v=19"></script>
+<script type="module" src="./assets/scripts/pages/index.js?v=20"></script>
 </body>
 </html>
 
