@@ -74,9 +74,62 @@ let cityCoordinateData = {};
 let currentLoadingTimer = null;
 let currentProgress = 0;
 let latestReport = null;
+const SHARE_QUERY_KEY = "report";
 
 function $(id) {
   return document.getElementById(id);
+}
+
+function showToast(message) {
+  let toast = $("global-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "global-toast";
+    toast.style.cssText = [
+      "position:fixed",
+      "left:50%",
+      "bottom:32px",
+      "transform:translateX(-50%)",
+      "background:rgba(28,26,33,.92)",
+      "color:#fff",
+      "padding:12px 18px",
+      "border-radius:999px",
+      "font-size:14px",
+      "z-index:9999",
+      "box-shadow:0 12px 30px rgba(0,0,0,.22)",
+      "opacity:0",
+      "transition:opacity .2s ease"
+    ].join(";");
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = "1";
+  window.clearTimeout(showToast.timerId);
+  showToast.timerId = window.setTimeout(() => {
+    toast.style.opacity = "0";
+  }, 1800);
+}
+
+function getReportShareUrl(reportUid) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  if (reportUid) {
+    url.searchParams.set(SHARE_QUERY_KEY, reportUid);
+  }
+  return url.toString();
+}
+
+function syncReportUrl(reportUid) {
+  const target = getReportShareUrl(reportUid);
+  if (window.location.href !== target) {
+    window.history.replaceState({ reportUid }, "", target);
+  }
+}
+
+function getReportUidFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return (params.get(SHARE_QUERY_KEY) || "").trim();
 }
 
 function clone(value) {
@@ -508,8 +561,7 @@ async function submitDouyinUnlock() {
 }
 
 function buildReportId(reportUid) {
-  const core = String(reportUid || "").slice(-8).toUpperCase();
-  return `珍藏编号 · ZD-${core || "PREVIEW"}-OP48`;
+  return `\u73cd\u85cf\u7f16\u53f7 \u00b7 ${safeText(reportUid, "report")}`;
 }
 
 function formatTriplet(info) {
@@ -523,6 +575,7 @@ function chapterEmoji(index) {
 
 function renderReport(response) {
   latestReport = response;
+  syncReportUrl(response.reportUid);
   const themeCopy = THEME_COPY[slugTheme(response.reportType)];
   $("cover-title-cn").textContent = themeCopy && themeCopy.coverTitleCn ? themeCopy.coverTitleCn : "深度报告";
   $("cover-title-en").textContent = themeCopy && themeCopy.coverTitleEn ? themeCopy.coverTitleEn : "Premium Reading";
@@ -575,6 +628,25 @@ function renderReport(response) {
   `).join("");
 
   $("action-bar-sub").textContent = response.reportType === "love" ? "珍藏这份属于你们的关系报告" : "珍藏这份属于你的专属报告";
+}
+
+async function loadSharedReportFromUrl() {
+  const reportUid = getReportUidFromUrl();
+  if (!reportUid) return false;
+  switchPage("loading");
+  startLoadingAnimation();
+  try {
+    const response = await api(`/api/compatibility/report/${encodeURIComponent(reportUid)}`);
+    stopLoadingAnimation(100);
+    renderReport(response);
+    switchPage("report");
+    return true;
+  } catch (error) {
+    stopLoadingAnimation(0);
+    switchPage("form");
+    showFormError(error.message || "\u62a5\u544a\u52a0\u8f7d\u5931\u8d25");
+    return false;
+  }
 }
 
 async function generateReport(model) {
@@ -638,14 +710,35 @@ function renderSharePreview() {
   if (!preview) return;
   const reportType = latestReport ? latestReport.reportType : "";
   const title = reportType === "love" ? "爱情合盘" : reportType === "career" ? "事业报告" : "财运报告";
+  const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
   preview.innerHTML = `
     <div style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:20px;background:#fff;">
       <div style="font-size:12px;letter-spacing:.12em;color:#9b7fc7;margin-bottom:8px;">XIAODENG REPORT</div>
       <div style="font-size:28px;font-weight:700;color:#222;margin-bottom:8px;">${escapeHtml(title || "星盘报告")}</div>
       <div style="font-size:16px;color:#555;margin-bottom:12px;">${escapeHtml((latestReport && latestReport.relationshipType) || "专属解析")}</div>
       <div style="font-size:42px;font-weight:700;color:#ff8b7a;">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</div>
+      <div style="margin-top:14px;font-size:11px;line-height:1.6;color:#777;word-break:break-all;">${escapeHtml(shareUrl)}</div>
     </div>
   `;
+}
+
+async function saveShareCardToAlbum() {
+  const preview = $("share-preview");
+  if (!preview || typeof window.html2canvas !== "function") {
+    throw new Error("当前环境暂不支持自动保存");
+  }
+  const canvas = await window.html2canvas(preview, {
+    backgroundColor: "#fff7fb",
+    scale: Math.min(window.devicePixelRatio || 2, 3),
+    useCORS: true
+  });
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = `zodiac-report-${Date.now()}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function bindFormEvents() {
@@ -717,17 +810,32 @@ function bindFormEvents() {
   });
   if ($("copy-link-btn")) $("copy-link-btn").addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(location.href);
-      showFormError("链接已复制");
-      setTimeout(() => showFormError(""), 1500);
+      const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
+      await navigator.clipboard.writeText(shareUrl);
+      showToast("\u5206\u4eab\u5730\u5740\u5df2\u590d\u5236");
     } catch {}
   });
   if ($("share-btn")) $("share-btn").addEventListener("click", () => {
     renderSharePreview();
     openModal("share-modal");
   });
-  if ($("share-download")) $("share-download").addEventListener("click", () => window.print());
-  if ($("pdf-btn")) $("pdf-btn").addEventListener("click", () => window.print());
+  if ($("share-download")) $("share-download").addEventListener("click", async () => {
+    try {
+      await saveShareCardToAlbum();
+      showToast("\u5df2\u4fdd\u5b58\u5230\u76f8\u518c");
+    } catch {
+      showToast("\u8bf7\u957f\u6309\u56fe\u7247\u4fdd\u5b58\u5230\u76f8\u518c");
+    }
+  });
+  if ($("pdf-btn")) $("pdf-btn").addEventListener("click", async () => {
+    try {
+      const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
+      await navigator.clipboard.writeText(shareUrl);
+      showToast("\u5206\u4eab\u5730\u5740\u5df2\u590d\u5236\uff0c\u5feb\u53d1\u7ed9\u670b\u53cb\u770b\u770b");
+    } catch {
+      showToast("\u590d\u5236\u5206\u4eab\u5730\u5740\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5");
+    }
+  });
 
   document.addEventListener("click", (event) => {
     const target = event.target;
@@ -763,6 +871,9 @@ async function init() {
   });
   setModel(activeModel);
   renderTheme(activeTheme);
+  if (await loadSharedReportFromUrl()) {
+    return;
+  }
   window.addEventListener("resize", () => {
     adjustThemeIndicator();
     adjustSliderHeight();
