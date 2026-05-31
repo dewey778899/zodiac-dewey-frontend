@@ -74,6 +74,7 @@ let cityCoordinateData = {};
 let currentLoadingTimer = null;
 let currentProgress = 0;
 let latestReport = null;
+let latestShareCardDataUrl = "";
 const SHARE_QUERY_KEY = "report";
 
 function $(id) {
@@ -577,8 +578,80 @@ function chapterEmoji(index) {
   return padStart2(index + 1);
 }
 
+function getShareCardTitle(reportType) {
+  if (reportType === "love") return "爱情合盘";
+  if (reportType === "career") return "事业报告";
+  return "财运报告";
+}
+
+function buildShareCardSource() {
+  const reportType = latestReport ? latestReport.reportType : "";
+  const title = getShareCardTitle(reportType);
+  const reportId = latestReport && latestReport.reportUid ? latestReport.reportUid : "Report";
+  const personAName = (latestReport && latestReport.personA && latestReport.personA.name) || "你";
+  const personBName = (latestReport && latestReport.personB && latestReport.personB.name) || "TA";
+  const zodiacA = ((latestReport && latestReport.zodiacA && latestReport.zodiacA.sun) || "SUN").toUpperCase();
+  const zodiacB = ((latestReport && latestReport.zodiacB && latestReport.zodiacB.sun) || "MOON").toUpperCase();
+  const isLove = reportType === "love";
+  return `
+    <div class="sc-emblem">
+      <div class="sc-emblem-text">XIAODENG ARCHIVE</div>
+      <div class="sc-emblem-deco">✦ ✧ ✦</div>
+    </div>
+    <div class="sc-names">
+      <div class="sc-name-row">
+        <div class="sc-name-block">
+          <div class="sc-name">${escapeHtml(personAName)}</div>
+          <div class="sc-name-zodiac">${escapeHtml(zodiacA)}</div>
+        </div>
+        ${isLove ? `<div class="sc-heart">❤</div>
+        <div class="sc-name-block">
+          <div class="sc-name">${escapeHtml(personBName)}</div>
+          <div class="sc-name-zodiac">${escapeHtml(zodiacB)}</div>
+        </div>` : ""}
+      </div>
+    </div>
+    <div class="sc-score-block">
+      <div><span class="sc-score">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</span><span class="sc-score-unit">/100</span></div>
+      <div class="sc-score-label">REPORT SCORE</div>
+    </div>
+    <div class="sc-type">
+      <span class="sc-type-text">${escapeHtml((latestReport && latestReport.relationshipType) || title)}</span>
+    </div>
+    <div class="sc-tagline">${escapeHtml((latestReport && latestReport.tagline) || "愿你更了解自己，也更从容地做选择。")}</div>
+    <div class="sc-footer">
+      <div class="sc-id">COLLECTOR CODE · ${escapeHtml(reportId)}</div>
+      <div class="sc-by">CREATED BY <span class="name">小登哥 · XIAODENG</span></div>
+      <div class="sc-call">打开同一链接即可查看完整报告：<br><strong>${escapeHtml(getReportShareUrl(latestReport && latestReport.reportUid))}</strong></div>
+    </div>
+  `;
+}
+
+async function generateShareCardDataUrl() {
+  if (!latestReport) throw new Error("请先生成报告");
+  if (typeof window.html2canvas !== "function") {
+    throw new Error("当前环境暂不支持生成分享卡");
+  }
+  const source = document.createElement("div");
+  source.id = "share-card-source";
+  source.innerHTML = buildShareCardSource();
+  document.body.appendChild(source);
+  try {
+    const canvas = await window.html2canvas(source, {
+      backgroundColor: null,
+      scale: Math.min(window.devicePixelRatio || 2, 3),
+      useCORS: true
+    });
+    latestShareCardDataUrl = canvas.toDataURL("image/png");
+    return latestShareCardDataUrl;
+  } finally {
+    document.body.removeChild(source);
+  }
+}
+
 function renderReport(response) {
   latestReport = response;
+  latestShareCardDataUrl = "";
   syncReportUrl(response.reportUid);
   const reportTheme = slugTheme(response.reportType);
   const themeCopy = THEME_COPY[reportTheme];
@@ -712,42 +785,18 @@ async function enterPremiumReport() {
   }
 }
 
-function renderSharePreview() {
+async function renderSharePreview(forceRegenerate = false) {
   const preview = $("share-preview");
   if (!preview) return;
-  const reportType = latestReport ? latestReport.reportType : "";
-  const title = reportType === "love" ? "爱情合盘" : reportType === "career" ? "事业报告" : "财运报告";
-  const shareUrl = getReportShareUrl(latestReport && latestReport.reportUid);
-  const reportId = latestReport && latestReport.reportUid ? latestReport.reportUid : "Report";
-  preview.innerHTML = `
-    <div style="padding:22px;border:1px solid rgba(201,163,107,.22);border-radius:24px;background:linear-gradient(180deg,#fffdfa 0%,#fff6fb 100%);box-shadow:0 18px 40px rgba(155,127,199,.12);">
-      <div style="font-size:11px;letter-spacing:.28em;color:#b18b62;margin-bottom:10px;">XIAODENG ARCHIVE</div>
-      <div style="font-size:28px;font-weight:700;color:#2d2430;margin-bottom:8px;">${escapeHtml(title || "星盘报告")}</div>
-      <div style="font-size:15px;color:#6b4f60;margin-bottom:14px;">${escapeHtml((latestReport && latestReport.relationshipType) || "专属解析")}</div>
-      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;">
-        <div style="font-size:44px;font-weight:700;color:#ff8b7a;line-height:1;">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</div>
-        <div style="font-size:12px;letter-spacing:.18em;color:#9b7fc7;">REPORT SCORE</div>
-      </div>
-      <div style="padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.82);border:1px solid rgba(155,127,199,.16);margin-bottom:12px;">
-        <div style="font-size:10px;letter-spacing:.22em;color:#9a7a8d;margin-bottom:4px;">COLLECTOR CODE</div>
-        <div style="font-size:14px;font-weight:600;color:#3d2a35;word-break:break-all;">${escapeHtml(reportId)}</div>
-      </div>
-      <div style="font-size:11px;line-height:1.7;color:#8a7481;word-break:break-all;">${escapeHtml(shareUrl)}</div>
-    </div>
-  `;
+  preview.innerHTML = `<div class="share-preview-loading">正在生成分享卡...</div>`;
+  const dataUrl = !forceRegenerate && latestShareCardDataUrl
+    ? latestShareCardDataUrl
+    : await generateShareCardDataUrl();
+  preview.innerHTML = `<img src="${dataUrl}" alt="分享卡" class="share-preview-image">`;
 }
 
 async function saveShareCardToAlbum() {
-  const preview = $("share-preview");
-  if (!preview || typeof window.html2canvas !== "function") {
-    throw new Error("当前环境暂不支持自动保存");
-  }
-  const canvas = await window.html2canvas(preview, {
-    backgroundColor: "#fff7fb",
-    scale: Math.min(window.devicePixelRatio || 2, 3),
-    useCORS: true
-  });
-  const dataUrl = canvas.toDataURL("image/png");
+  const dataUrl = latestShareCardDataUrl || await generateShareCardDataUrl();
   const link = document.createElement("a");
   link.href = dataUrl;
   link.download = `zodiac-report-${Date.now()}.png`;
@@ -848,21 +897,22 @@ function bindFormEvents() {
   if ($("pay-confirm-btn")) $("pay-confirm-btn").addEventListener("click", enterPremiumReport);
   if ($("restart-btn")) $("restart-btn").addEventListener("click", () => {
     latestReport = null;
+    latestShareCardDataUrl = "";
     switchPage("form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   if ($("share-btn")) $("share-btn").addEventListener("click", async () => {
     const shared = await openNativeShare();
     if (!shared) {
-      renderSharePreview();
+      await renderSharePreview();
       openModal("share-modal");
     }
   });
   if ($("share-download")) $("share-download").addEventListener("click", async () => {
     try {
-      renderSharePreview();
+      await renderSharePreview();
       await saveShareCardToAlbum();
-      showToast("已保存到相册");
+      showToast("分享卡已生成，可直接保存");
     } catch {
       showToast("请长按图片保存到相册");
     }
@@ -877,11 +927,11 @@ function bindFormEvents() {
   });
   if ($("pdf-btn")) $("pdf-btn").addEventListener("click", async () => {
     try {
-      renderSharePreview();
-      await saveShareCardToAlbum();
-      showToast("已保存到相册");
+      await renderSharePreview(true);
+      openModal("share-modal");
+      showToast("分享卡已生成，请长按图片保存到相册");
     } catch {
-      showToast("请长按图片保存到相册");
+      showToast("生成分享卡失败，请稍后再试");
     }
   });
 

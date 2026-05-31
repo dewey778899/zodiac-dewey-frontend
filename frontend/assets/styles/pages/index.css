@@ -1470,9 +1470,28 @@
     overflow: hidden;
     box-shadow: var(--shadow-card);
     margin-bottom: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,247,251,0.92));
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .share-card-preview img {
-    width: 100%; display: block;
+    width: 100%;
+    display: block;
+  }
+  .share-preview-image {
+    width: 100%;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .share-preview-loading {
+    padding: 40px 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.8;
   }
   .modal-actions {
     display: flex; gap: 10px;
