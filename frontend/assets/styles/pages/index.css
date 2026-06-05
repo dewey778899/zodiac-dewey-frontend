@@ -194,6 +194,30 @@
   .slide-model-switcher {
     margin-bottom: 18px;
   }
+  .model-option.premium-active {
+    border-color: rgba(168, 126, 190, 0.58);
+    background: linear-gradient(135deg, #fff7fb 0%, #f6ecff 52%, #f4e7fb 100%);
+    color: #6d5063;
+    box-shadow: 0 12px 28px rgba(155, 127, 199, 0.18), inset 0 1px 0 rgba(255,255,255,0.85);
+    font-weight: 700;
+  }
+  .model-option.premium-active .model-badge {
+    color: #9b7fc7;
+  }
+  .model-option.premium-unlocked::after {
+    content: "已解锁";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(155, 127, 199, 0.12);
+    color: #8e689f;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+  }
   .form-slide[data-theme="career"] .slide-head,
   .form-slide[data-theme="wealth"] .slide-head {
     margin-bottom: 14px;
@@ -494,11 +518,14 @@
     letter-spacing: 0.4px;
   }
   .loading-progress-value {
-    font-size: 28px;
-    line-height: 1;
-    font-weight: 800;
-    color: var(--peach-deep);
-    font-family: "Cormorant Garamond", serif;
+    font-size: 34px;
+    line-height: 0.95;
+    font-weight: 700;
+    color: #7f5668;
+    font-family: "Cormorant Garamond", "Baskerville", "Times New Roman", serif;
+    letter-spacing: 0.6px;
+    font-variant-numeric: lining-nums tabular-nums;
+    text-shadow: 0 8px 18px rgba(155, 127, 199, 0.12);
   }
   .loading-progress-track {
     height: 10px;
@@ -599,7 +626,7 @@
       margin-bottom: 16px;
     }
     .loading-progress-value {
-      font-size: 24px;
+      font-size: 28px;
     }
     .loading-step {
       padding: 11px 12px;
@@ -667,7 +694,8 @@
     font-size: 14px; letter-spacing: 8px; color: var(--gold-light);
   }
   .cover-zodiac-row {
-    display: flex; align-items: center; justify-content: center; gap: 14px;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: start; justify-content: center; gap: 14px;
     margin: 28px 0 24px;
   }
   .cover-zodiac-row.single-report {
@@ -682,6 +710,7 @@
   }
   .cover-zodiac {
     text-align: center;
+    min-width: 0;
   }
   .cover-zodiac-icon {
     font-size: 32px;
@@ -696,14 +725,22 @@
     margin-bottom: 2px;
   }
   .cover-zodiac-person {
-    font-size: 14px; font-weight: 600; color: var(--ink);
+    font-size: 15px; font-weight: 700; color: var(--ink);
     font-family: "Noto Serif SC", serif;
+    line-height: 1.35;
+    min-height: 2.7em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    word-break: break-word;
   }
   .cover-heart {
     font-size: 28px;
     background: linear-gradient(135deg, #ff8b7a, #9b7fc7);
     -webkit-background-clip: text; background-clip: text; color: transparent;
     animation: heartBeat 2s ease-in-out infinite;
+    align-self: center;
   }
   @keyframes heartBeat {
     0%, 100% { transform: scale(1); }
@@ -802,18 +839,21 @@
     box-shadow: 0 12px 28px rgba(155, 127, 199, 0.08);
   }
   .cover-meta-id-label {
-    font-family: "Cormorant Garamond", serif;
+    font-family: "Cormorant Garamond", "Baskerville", serif;
     font-size: 10px;
-    color: var(--ink-soft);
-    letter-spacing: 4px;
+    color: #8a7683;
+    letter-spacing: 4.6px;
   }
   .cover-meta-id-value {
-    font-family: "Cormorant Garamond", "Courier New", monospace;
-    font-size: 18px;
-    color: var(--gold);
-    letter-spacing: 1px;
-    line-height: 1.2;
+    font-family: "Cormorant Garamond", "Baskerville", "Times New Roman", serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #8d6474;
+    letter-spacing: 0.8px;
+    line-height: 1.15;
     word-break: break-all;
+    font-variant-numeric: lining-nums tabular-nums;
+    text-shadow: 0 6px 16px rgba(201, 163, 107, 0.12);
   }
   .cover-meta-date {
     font-family: "Cormorant Garamond", serif;
@@ -955,6 +995,38 @@
   .zd-value { color: var(--peach-deep); font-weight: 700; font-family: "Noto Serif SC", serif; }
   .zd-divider { width: 1px; background: linear-gradient(180deg, transparent, rgba(201, 163, 107, 0.4), transparent); }
   .zd-foot { text-align: center; font-size: 11px; color: var(--ink-soft); margin-top: 14px; line-height: 1.6; }
+  .zd-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .zd-summary-item {
+    display: grid;
+    grid-template-columns: minmax(52px, auto) 18px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 0;
+    font-size: 14.5px;
+    line-height: 1.95;
+    color: #5c4a56;
+    font-family: "Noto Serif SC", serif;
+  }
+  .zd-summary-name {
+    text-align: right;
+    color: var(--peach-deep);
+    font-weight: 700;
+    white-space: nowrap;
+    padding-right: 4px;
+  }
+  .zd-summary-sep {
+    text-align: center;
+    color: rgba(92, 74, 86, 0.72);
+    font-weight: 600;
+  }
+  .zd-summary-value {
+    min-width: 0;
+    word-break: break-word;
+  }
 
   .toast {
     position: fixed;

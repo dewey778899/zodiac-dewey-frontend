@@ -63,15 +63,24 @@ const DEFAULT_STATE = {
 };
 
 const paymentState = {
-  accessToken: "",
+  accessTokens: {
+    love: "",
+    career: "",
+    wealth: ""
+  },
   unlockSource: "douyin_follow"
 };
 
 let activeTheme = "love";
-let activeModel = "deepseek";
+const themeModelState = {
+  love: "deepseek",
+  career: "deepseek",
+  wealth: "deepseek"
+};
 let cityIndex = new Map();
 let cityCoordinateData = {};
 let currentLoadingTimer = null;
+let currentLoadingRaf = 0;
 let currentProgress = 0;
 let latestReport = null;
 let latestShareCardDataUrl = "";
@@ -358,15 +367,25 @@ function renderTheme(theme) {
   });
   renderPerson(activeTheme, "a");
   if (activeTheme === "love") renderPerson(activeTheme, "b");
+  setModel(themeModelState[activeTheme] || "deepseek");
   adjustThemeIndicator();
   adjustSliderPosition();
   requestAnimationFrame(adjustSliderHeight);
 }
 
 function setModel(model) {
-  activeModel = model === "claude" ? "claude" : "deepseek";
-  document.querySelectorAll(".model-option").forEach((button) => {
-    button.classList.toggle("active", button.dataset.model === activeModel);
+  const resolved = model === "claude" ? "claude" : "deepseek";
+  themeModelState[activeTheme] = resolved;
+  document.querySelectorAll(".form-slide").forEach((slide) => {
+    const theme = slide.dataset.theme;
+    const selectedModel = themeModelState[theme] || "deepseek";
+    slide.querySelectorAll(".model-option").forEach((button) => {
+      const isActive = button.dataset.model === selectedModel;
+      const isPremium = button.dataset.model === "claude";
+      button.classList.toggle("active", isActive);
+      button.classList.toggle("premium-active", isActive && isPremium);
+      button.classList.toggle("premium-unlocked", isPremium && Boolean(paymentState.accessTokens[theme]));
+    });
   });
 }
 
@@ -417,25 +436,75 @@ function setLoadingProgress(percent, label) {
   if ($("loading-progress-label")) $("loading-progress-label").textContent = label;
 }
 
-function startLoadingAnimation() {
-  stopLoadingAnimation(0);
-  let step = 0;
-  renderLoadingSteps(step);
-  setLoadingProgress(0, "准备开始...");
-  currentLoadingTimer = window.setInterval(() => {
-    const next = Math.min(currentProgress + 7, 92);
-    if (next >= (step + 1) * 23 && step < LOADING_STEPS.length - 1) {
-      step += 1;
-      renderLoadingSteps(step);
-    }
-    setLoadingProgress(next, LOADING_STEPS[Math.min(step, LOADING_STEPS.length - 1)]);
-  }, 420);
+function getLoadingStepIndex(percent) {
+  if (percent >= 78) return 3;
+  if (percent >= 52) return 2;
+  if (percent >= 24) return 1;
+  return 0;
 }
 
-function stopLoadingAnimation(finalProgress) {
+function getLoadingLabel(percent) {
+  if (percent >= 92) return "正在整理结果细节...";
+  if (percent >= 78) return "正在整理最终报告...";
+  return LOADING_STEPS[Math.min(getLoadingStepIndex(percent), LOADING_STEPS.length - 1)];
+}
+
+function cancelLoadingAnimation() {
   if (currentLoadingTimer) clearInterval(currentLoadingTimer);
   currentLoadingTimer = null;
-  setLoadingProgress(finalProgress, finalProgress >= 100 ? "已完成" : "处理中...");
+  if (currentLoadingRaf) cancelAnimationFrame(currentLoadingRaf);
+  currentLoadingRaf = 0;
+}
+
+function startLoadingAnimation() {
+  cancelLoadingAnimation();
+  currentProgress = 0;
+  renderLoadingSteps(0);
+  setLoadingProgress(0, "准备开始...");
+  currentLoadingTimer = window.setInterval(() => {
+    const remaining = 96 - currentProgress;
+    if (remaining <= 0.15) return;
+    let increment = remaining * 0.12;
+    if (currentProgress < 20) increment = Math.max(increment, 4.8);
+    else if (currentProgress < 48) increment = Math.max(increment, 2.8);
+    else if (currentProgress < 78) increment = Math.max(increment, 1.35);
+    else increment = Math.max(increment, 0.32);
+    const next = Math.min(currentProgress + increment, 96);
+    renderLoadingSteps(getLoadingStepIndex(next));
+    setLoadingProgress(next, getLoadingLabel(next));
+  }, 360);
+}
+
+function stopLoadingAnimation(finalProgress, options = {}) {
+  const { animate = false, onComplete = null } = options;
+  cancelLoadingAnimation();
+  const target = Math.max(0, Math.min(finalProgress, 100));
+  if (!animate) {
+    const stepIndex = target >= 100 ? LOADING_STEPS.length - 1 : getLoadingStepIndex(target);
+    renderLoadingSteps(stepIndex);
+    setLoadingProgress(target, target >= 100 ? "已完成" : "处理中...");
+    if (typeof onComplete === "function") onComplete();
+    return;
+  }
+
+  const start = currentProgress;
+  const duration = 420;
+  const startedAt = performance.now();
+  const tick = (now) => {
+    const elapsed = now - startedAt;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const next = start + (target - start) * eased;
+    renderLoadingSteps(target >= 100 && progress >= 1 ? LOADING_STEPS.length - 1 : getLoadingStepIndex(next));
+    setLoadingProgress(next, target >= 100 ? "已完成" : getLoadingLabel(next));
+    if (progress < 1) {
+      currentLoadingRaf = requestAnimationFrame(tick);
+      return;
+    }
+    currentLoadingRaf = 0;
+    if (typeof onComplete === "function") onComplete();
+  };
+  currentLoadingRaf = requestAnimationFrame(tick);
 }
 
 function syncBirthDate(theme, personKey) {
@@ -506,7 +575,9 @@ function buildCompatibilityPayload(model) {
   if (activeTheme === "love") {
     payload.personB = buildPersonPayload(stateByTheme[activeTheme].b, "TA");
   }
-  if (model === "claude" && paymentState.accessToken) payload.accessToken = paymentState.accessToken;
+  if (model === "claude" && paymentState.accessTokens[activeTheme]) {
+    payload.accessToken = paymentState.accessTokens[activeTheme];
+  }
   return payload;
 }
 
@@ -526,7 +597,7 @@ function validateCurrentForm() {
 }
 
 function resetPaymentState() {
-  paymentState.accessToken = "";
+  paymentState.accessTokens[activeTheme] = "";
 }
 
 function setPayStatus(text, success = false) {
@@ -557,8 +628,9 @@ async function submitDouyinUnlock() {
     })
   });
   if (!result.accessToken) throw new Error("解锁失败，请稍后重试");
-  paymentState.accessToken = result.accessToken;
+  paymentState.accessTokens[activeTheme] = result.accessToken;
   setPayStatus(result.message || "已解锁深度解析", true);
+  setModel("claude");
 }
 
 function buildReportId(reportUid) {
@@ -681,9 +753,18 @@ function renderReport(response) {
       <div class="chapter-emoji">✦</div>
       <div class="chapter-title">星盘重点</div>
     </div>
-    <div class="chapter-body">
-      <strong>${escapeHtml((response.personA && response.personA.name) || "我")}</strong>：${escapeHtml(formatTriplet(response.zodiacA))}
-      ${isLove ? `<br><strong>${escapeHtml((response.personB && response.personB.name) || "TA")}</strong>：${escapeHtml(formatTriplet(response.zodiacB))}` : ""}
+    <div class="zd-summary-list">
+      <div class="zd-summary-item">
+        <div class="zd-summary-name">${escapeHtml((response.personA && response.personA.name) || "我")}</div>
+        <div class="zd-summary-sep">：</div>
+        <div class="zd-summary-value">${escapeHtml(formatTriplet(response.zodiacA))}</div>
+      </div>
+      ${isLove ? `
+      <div class="zd-summary-item">
+        <div class="zd-summary-name">${escapeHtml((response.personB && response.personB.name) || "TA")}</div>
+        <div class="zd-summary-sep">：</div>
+        <div class="zd-summary-value">${escapeHtml(formatTriplet(response.zodiacB))}</div>
+      </div>` : ""}
     </div>
   `;
 
@@ -717,9 +798,13 @@ async function loadSharedReportFromUrl() {
   startLoadingAnimation();
   try {
     const response = await api(`/api/compatibility/report/${encodeURIComponent(reportUid)}`);
-    stopLoadingAnimation(100);
-    renderReport(response);
-    switchPage("report");
+    stopLoadingAnimation(100, {
+      animate: true,
+      onComplete: () => {
+        renderReport(response);
+        switchPage("report");
+      }
+    });
     return true;
   } catch (error) {
     stopLoadingAnimation(0);
@@ -738,9 +823,13 @@ async function generateReport(model) {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    stopLoadingAnimation(100);
-    renderReport(response);
-    switchPage("report");
+    stopLoadingAnimation(100, {
+      animate: true,
+      onComplete: () => {
+        renderReport(response);
+        switchPage("report");
+      }
+    });
   } catch (error) {
     stopLoadingAnimation(0);
     switchPage("form");
@@ -755,12 +844,17 @@ async function handleSubmit() {
     showFormError(validationError);
     return;
   }
-  if (activeModel === "claude") {
+  const selectedModel = themeModelState[activeTheme] || "deepseek";
+  if (selectedModel === "claude" && !paymentState.accessTokens[activeTheme]) {
     openModal("value-modal");
     return;
   }
   try {
-    await generateReport("deepseek");
+    await generateReport(selectedModel);
+    if (selectedModel === "claude") {
+      paymentState.accessTokens[activeTheme] = "";
+      setModel("deepseek");
+    }
   } catch (error) {
     showFormError(error.message || "生成失败");
   }
@@ -768,7 +862,6 @@ async function handleSubmit() {
 
 async function beginPremiumFlow() {
   closeModal("value-modal");
-  resetPaymentState();
   openModal("pay-modal");
   if ($("douyin-name-input")) $("douyin-name-input").value = "";
   if ($("douyin-followed-check")) $("douyin-followed-check").checked = false;
@@ -779,7 +872,6 @@ async function enterPremiumReport() {
   try {
     await submitDouyinUnlock();
     closeModal("pay-modal");
-    await generateReport("claude");
   } catch (error) {
     setPayStatus(error.message || "解锁校验失败");
   }
@@ -875,10 +967,15 @@ function bindFormEvents() {
 
   document.querySelectorAll(".model-option").forEach((button) => {
     button.addEventListener("click", () => {
+      const slide = closestBySelector(button, ".form-slide");
+      const theme = slide && slide.dataset ? slide.dataset.theme : "";
+      if (!theme) return;
+      activeTheme = theme;
       if (button.dataset.model === "claude") {
         setModel("claude");
         openModal("value-modal");
       } else {
+        paymentState.accessTokens[theme] = "";
         setModel("deepseek");
       }
     });
