@@ -1064,7 +1064,7 @@ async function init() {
     renderPerson(theme, "a");
     if (theme === "love") renderPerson(theme, "b");
   });
-  setModel(activeModel);
+  setModel(themeModelState[activeTheme] || "deepseek");
   renderTheme(activeTheme);
   if (await loadSharedReportFromUrl()) {
     return;
