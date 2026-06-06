@@ -699,6 +699,8 @@
     margin: 28px 0 24px;
   }
   .cover-zodiac-row.single-report {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
     gap: 0;
   }
   .cover-zodiac-row.single-report #cover-zodiac-b-block,
@@ -706,7 +708,9 @@
     display: none;
   }
   .cover-zodiac-row.single-report #cover-zodiac-a-block {
+    width: min(100%, 260px);
     min-width: 220px;
+    margin: 0 auto;
   }
   .cover-zodiac {
     text-align: center;
@@ -773,7 +777,7 @@
   .cover-score-wrap::before { left: 20%; }
   .cover-score-wrap::after { right: 20%; }
   .cover-score {
-    font-family: "Cormorant Garamond", serif;
+    font-family: SimSun, STSong, "Noto Serif SC", serif;
     font-size: 80px; font-weight: 700;
     background: linear-gradient(135deg, #ff8b7a 0%, #9b7fc7 100%);
     -webkit-background-clip: text; background-clip: text; color: transparent;

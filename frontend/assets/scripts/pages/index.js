@@ -62,6 +62,33 @@ const DEFAULT_STATE = {
   }
 };
 
+const ZODIAC_SYMBOLS = {
+  ARIES: "♈",
+  TAURUS: "♉",
+  GEMINI: "♊",
+  CANCER: "♋",
+  LEO: "♌",
+  VIRGO: "♍",
+  LIBRA: "♎",
+  SCORPIO: "♏",
+  SAGITTARIUS: "♐",
+  CAPRICORN: "♑",
+  AQUARIUS: "♒",
+  PISCES: "♓",
+  白羊座: "♈",
+  金牛座: "♉",
+  双子座: "♊",
+  巨蟹座: "♋",
+  狮子座: "♌",
+  处女座: "♍",
+  天秤座: "♎",
+  天蝎座: "♏",
+  射手座: "♐",
+  摩羯座: "♑",
+  水瓶座: "♒",
+  双鱼座: "♓"
+};
+
 const paymentState = {
   accessTokens: {
     love: "",
@@ -88,6 +115,13 @@ const SHARE_QUERY_KEY = "report";
 
 function $(id) {
   return document.getElementById(id);
+}
+
+function getZodiacSymbol(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "✦";
+  const upper = normalized.toUpperCase();
+  return ZODIAC_SYMBOLS[normalized] || ZODIAC_SYMBOLS[upper] || "✦";
 }
 
 function showToast(message) {
@@ -347,6 +381,7 @@ function adjustSliderHeight() {
 
 function renderTheme(theme) {
   activeTheme = THEME_COPY[theme] ? theme : "love";
+  clearFormError();
   const copy = THEME_COPY[activeTheme];
   $("hero-tag").textContent = copy.heroTag;
   $("hero-title").innerHTML = copy.heroTitle;
@@ -394,6 +429,21 @@ function showFormError(message) {
   if (!box) return;
   box.textContent = message || "";
   box.classList.toggle("hidden", !message);
+}
+
+function clearFormError() {
+  showFormError("");
+}
+
+function getElementTheme(element) {
+  const slide = closestBySelector(element, ".form-slide");
+  return slide && slide.dataset ? slide.dataset.theme || "" : "";
+}
+
+function clearFormErrorForActiveTheme(element) {
+  if (getElementTheme(element) === activeTheme) {
+    clearFormError();
+  }
 }
 
 function openModal(id) {
@@ -737,7 +787,7 @@ function renderReport(response) {
   $("cover-date").textContent = new Date().toLocaleDateString("zh-CN");
   $("cover-person-a").textContent = (response.personA && response.personA.name) || stateByTheme[activeTheme].a.name || "我";
   $("cover-zodiac-a-name").textContent = (((response.zodiacA && response.zodiacA.sun) || "SUN")).toUpperCase();
-  $("cover-zodiac-a-icon").textContent = "✦";
+  $("cover-zodiac-a-icon").textContent = getZodiacSymbol((response.zodiacA && response.zodiacA.sun) || "SUN");
 
   const isLove = response.reportType === "love";
   $("cover-zodiac-b-block").style.display = isLove ? "" : "none";
@@ -745,7 +795,7 @@ function renderReport(response) {
   if (isLove) {
     $("cover-person-b").textContent = (response.personB && response.personB.name) || stateByTheme[activeTheme].b.name || "TA";
     $("cover-zodiac-b-name").textContent = (((response.zodiacB && response.zodiacB.sun) || "MOON")).toUpperCase();
-    $("cover-zodiac-b-icon").textContent = "✦";
+    $("cover-zodiac-b-icon").textContent = getZodiacSymbol((response.zodiacB && response.zodiacB.sun) || "MOON");
   }
 
   $("zodiac-details").innerHTML = `
@@ -790,6 +840,35 @@ function renderReport(response) {
     ? "把这份只属于你们的关系答案，优雅地留存，也安心地分享给彼此。"
     : "把这份只属于此刻的个人答案，安静收藏，也分享给真正懂你的人。";
 }
+
+const originalRenderReport = renderReport;
+renderReport = function patchedRenderReport(response) {
+  originalRenderReport(response);
+
+  const isLove = response && response.reportType === "love";
+  const coverRow = $("cover-zodiac-row");
+  if (coverRow) {
+    coverRow.classList.toggle("single-report", !isLove);
+  }
+
+  const zodiacASun = response && response.zodiacA ? response.zodiacA.sun : "";
+  if ($("cover-zodiac-a-name")) {
+    $("cover-zodiac-a-name").textContent = String(zodiacASun || "SUN").toUpperCase();
+  }
+  if ($("cover-zodiac-a-icon")) {
+    $("cover-zodiac-a-icon").textContent = getZodiacSymbol(zodiacASun);
+  }
+
+  if (isLove) {
+    const zodiacBSun = response && response.zodiacB ? response.zodiacB.sun : "";
+    if ($("cover-zodiac-b-name")) {
+      $("cover-zodiac-b-name").textContent = String(zodiacBSun || "MOON").toUpperCase();
+    }
+    if ($("cover-zodiac-b-icon")) {
+      $("cover-zodiac-b-icon").textContent = getZodiacSymbol(zodiacBSun);
+    }
+  }
+};
 
 async function loadSharedReportFromUrl() {
   const reportUid = getReportUidFromUrl();
@@ -932,12 +1011,15 @@ function bindFormEvents() {
 
   document.querySelectorAll(".person-input, .person-select").forEach((element) => {
     const eventName = element.tagName === "SELECT" || element.type === "time" ? "change" : "input";
+    element.addEventListener("focus", () => {
+      clearFormErrorForActiveTheme(element);
+    });
     element.addEventListener(eventName, () => {
-      const slide = closestBySelector(element, ".form-slide");
-      const theme = slide && slide.dataset ? slide.dataset.theme : "";
+      const theme = getElementTheme(element);
       const personKey = element.dataset.person;
       const field = element.dataset.field;
       if (!theme || !personKey || !field) return;
+      clearFormErrorForActiveTheme(element);
       if (field === "name" || field === "birthTime") {
         setThemeState(theme, personKey, { [field]: element.value });
       } else if (field === "birthYear" || field === "birthMonth" || field === "birthDay") {
@@ -956,10 +1038,10 @@ function bindFormEvents() {
 
   document.querySelectorAll(".gender-btn").forEach((button) => {
     button.addEventListener("click", () => {
-      const slide = closestBySelector(button, ".form-slide");
-      const theme = slide && slide.dataset ? slide.dataset.theme : "";
+      const theme = getElementTheme(button);
       const personKey = button.dataset.person;
       if (!theme || !personKey) return;
+      clearFormErrorForActiveTheme(button);
       setThemeState(theme, personKey, { gender: button.dataset.value });
       renderPerson(theme, personKey);
     });
