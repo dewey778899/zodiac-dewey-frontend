@@ -717,11 +717,12 @@
     min-width: 0;
   }
   .cover-zodiac-icon {
+    font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", "Apple Symbols", "Arial Unicode MS", sans-serif;
     font-size: 32px;
-    background: linear-gradient(135deg, var(--gold-light), var(--gold));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+    color: var(--gold);
     margin-bottom: 6px;
-    filter: drop-shadow(0 2px 4px rgba(201, 163, 107, 0.3));
+    text-shadow: 0 2px 4px rgba(201, 163, 107, 0.28);
+    display: inline-block;
   }
   .cover-zodiac-name {
     font-family: "Cormorant Garamond", "Noto Serif SC", serif;
@@ -1569,6 +1570,30 @@
     color: var(--ink-soft);
     line-height: 1.8;
   }
+  .share-link-box {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.78);
+    border: 1px solid rgba(201, 163, 107, 0.28);
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.7;
+    word-break: break-all;
+  }
+  .share-link-box.hidden {
+    display: none;
+  }
+  .share-link-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--ink-light);
+    font-weight: 600;
+  }
+  .share-link-value {
+    color: var(--peach-deep);
+    font-family: "Courier New", monospace;
+  }
   .modal-actions {
     display: flex; gap: 10px;
   }
@@ -1624,7 +1649,19 @@
     gap: 20px;
     margin-bottom: 12px;
   }
+  .sc-name-row.single-report {
+    gap: 0;
+  }
   .sc-name-block { text-align: center; }
+  .sc-zodiac-icon {
+    font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", "Apple Symbols", "Arial Unicode MS", sans-serif;
+    font-size: 26px;
+    line-height: 1;
+    margin-bottom: 8px;
+    color: var(--gold);
+    text-shadow: 0 2px 4px rgba(201, 163, 107, 0.24);
+    display: inline-block;
+  }
   .sc-name {
     font-size: 22px; font-weight: 800; color: var(--ink);
   }
@@ -1646,11 +1683,12 @@
     border-bottom: 1px dashed rgba(201, 163, 107, 0.3);
   }
   .sc-score {
-    font-family: "Cormorant Garamond", serif;
+    font-family: SimSun, STSong, "Noto Serif SC", serif;
     font-size: 80px; font-weight: 700;
-    background: linear-gradient(135deg, #ff8b7a 0%, #9b7fc7 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+    color: #b56a86;
+    text-shadow: 0 4px 14px rgba(155, 127, 199, 0.18);
     line-height: 1;
+    display: inline-block;
   }
   .sc-score-unit {
     font-family: "Cormorant Garamond", serif;

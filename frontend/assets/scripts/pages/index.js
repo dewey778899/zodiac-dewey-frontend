@@ -19,7 +19,7 @@ const LOADING_STEPS = ["校对出生信息", "生成星盘结构", "解析关系
 const THEME_COPY = {
   love: {
     heroTag: "LOVE REPORT · 灵魂合盘",
-    heroTitle: "你和 TA<br>到底有多合",
+    heroTitle: "你和 TA<br>到底有多合？",
     submitText: "解析我们的灵魂合盘",
     slideTitle: "爱情合盘",
     slideSub: "保留双人输入，重点看吸引力、冲突点和相处节奏。",
@@ -111,11 +111,53 @@ let currentLoadingRaf = 0;
 let currentProgress = 0;
 let latestReport = null;
 let latestShareCardDataUrl = "";
+let latestShareCardCacheKey = "";
 const SHARE_QUERY_KEY = "report";
+const SHARE_CARD_STYLE_VERSION = "v2";
 
 function $(id) {
   return document.getElementById(id);
 }
+
+function buildShareCardCacheKey(report) {
+  if (!report || !report.reportUid) return "";
+  return JSON.stringify({
+    version: SHARE_CARD_STYLE_VERSION,
+    reportUid: report.reportUid,
+    reportType: report.reportType || "",
+    score: report.score == null ? "" : String(report.score),
+    zodiacA: report.zodiacA && report.zodiacA.sun ? String(report.zodiacA.sun) : "",
+    zodiacB: report.zodiacB && report.zodiacB.sun ? String(report.zodiacB.sun) : ""
+  });
+}
+
+function resetShareCardCache(report = latestReport) {
+  latestShareCardDataUrl = "";
+  latestShareCardCacheKey = buildShareCardCacheKey(report);
+}
+
+function ensureShareCardCacheFresh() {
+  const nextKey = buildShareCardCacheKey(latestReport);
+  if (!nextKey) {
+    latestShareCardDataUrl = "";
+    latestShareCardCacheKey = "";
+    return "";
+  }
+  if (latestShareCardCacheKey !== nextKey) {
+    latestShareCardDataUrl = "";
+    latestShareCardCacheKey = nextKey;
+  }
+  return nextKey;
+}
+
+const originalGetZodiacSymbol = getZodiacSymbol;
+getZodiacSymbol = function patchedGetZodiacSymbol(value) {
+  const symbol = originalGetZodiacSymbol(value);
+  if (!symbol || symbol === "?" || symbol === "�") {
+    return "✦";
+  }
+  return symbol;
+};
 
 function getZodiacSymbol(value) {
   const normalized = String(value || "").trim();
@@ -226,7 +268,7 @@ async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const resp = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(data.message || `请求失败 (${resp.status})`);
+  if (!resp.ok) throw new Error(data.message || `璇锋眰澶辫触 (${resp.status})`);
   return data;
 }
 
@@ -333,7 +375,7 @@ function refreshPlaceSelects(theme, personKey) {
   const province = controls.province.value || person.birthProvince;
   populateSelect(controls.city, getCities(province), "市", person.birthCity);
   const city = controls.city.value || person.birthCity;
-  populateSelect(controls.district, getDistricts(province, city), "区/县", person.birthDistrict);
+  populateSelect(controls.district, getDistricts(province, city), "区 / 县", person.birthDistrict);
   setThemeState(theme, personKey, {
     birthProvince: controls.province.value,
     birthCity: controls.city.value,
@@ -386,7 +428,7 @@ function renderTheme(theme) {
   $("hero-tag").textContent = copy.heroTag;
   $("hero-title").innerHTML = copy.heroTitle;
   $("submit-btn").textContent = copy.submitText;
-  $("theme-hint").textContent = activeTheme === "love" ? "左右滑动切换不同主题" : "左右滑动查看不同主题内容";
+  $("theme-hint").textContent = activeTheme === "love" ? "宸﹀彸婊戝姩鍒囨崲涓嶅悓涓婚" : "宸﹀彸婊戝姩鏌ョ湅涓嶅悓涓婚鍐呭";
   document.querySelectorAll(".theme-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.theme === activeTheme);
   });
@@ -494,7 +536,7 @@ function getLoadingStepIndex(percent) {
 }
 
 function getLoadingLabel(percent) {
-  if (percent >= 92) return "正在整理结果细节...";
+  if (percent >= 92) return "姝ｅ湪鏁寸悊缁撴灉缁嗚妭...";
   if (percent >= 78) return "正在整理最终报告...";
   return LOADING_STEPS[Math.min(getLoadingStepIndex(percent), LOADING_STEPS.length - 1)];
 }
@@ -638,9 +680,9 @@ function validateCurrentForm() {
   if (activeTheme === "love") {
     const b = stateByTheme[activeTheme].b;
     if (!b.name.trim()) return "请先填写 TA 的名字";
-    if (!b.birthProvince || !b.birthCity || !b.birthDistrict) return "请完整选择 TA 的出生地";
+    if (!b.birthProvince || !b.birthCity || !b.birthDistrict) return "璇峰畬鏁撮€夋嫨 TA 鐨勫嚭鐢熷湴";
     if ((a.gender || "").toLowerCase() === (b.gender || "").toLowerCase()) {
-      return "爱情合盘暂不支持同一性别组合，请选择一男一女";
+        return "爱情合盘暂不支持同一性别组合，请选择一男一女";
     }
   }
   return "";
@@ -710,7 +752,7 @@ function buildShareCardSource() {
   const reportType = latestReport ? latestReport.reportType : "";
   const title = getShareCardTitle(reportType);
   const reportId = latestReport && latestReport.reportUid ? latestReport.reportUid : "Report";
-  const personAName = (latestReport && latestReport.personA && latestReport.personA.name) || "你";
+  const personAName = (latestReport && latestReport.personA && latestReport.personA.name) || "我";
   const personBName = (latestReport && latestReport.personB && latestReport.personB.name) || "TA";
   const zodiacA = ((latestReport && latestReport.zodiacA && latestReport.zodiacA.sun) || "SUN").toUpperCase();
   const zodiacB = ((latestReport && latestReport.zodiacB && latestReport.zodiacB.sun) || "MOON").toUpperCase();
@@ -718,7 +760,7 @@ function buildShareCardSource() {
   return `
     <div class="sc-emblem">
       <div class="sc-emblem-text">XIAODENG ARCHIVE</div>
-      <div class="sc-emblem-deco">✦ ✧ ✦</div>
+      <div class="sc-emblem-deco">✦ ✦ ✦</div>
     </div>
     <div class="sc-names">
       <div class="sc-name-row">
@@ -744,7 +786,7 @@ function buildShareCardSource() {
     <div class="sc-footer">
       <div class="sc-id">COLLECTOR CODE · ${escapeHtml(reportId)}</div>
       <div class="sc-by">CREATED BY <span class="name">小登哥 · XIAODENG</span></div>
-      <div class="sc-call">打开同一链接即可查看完整报告：<br><strong>${escapeHtml(getReportShareUrl(latestReport && latestReport.reportUid))}</strong></div>
+      <div class="sc-call">打开同一链接即可查看完整报告<br><strong>${escapeHtml(getReportShareUrl(latestReport && latestReport.reportUid))}</strong></div>
     </div>
   `;
 }
@@ -773,7 +815,7 @@ async function generateShareCardDataUrl() {
 
 function renderReport(response) {
   latestReport = response;
-  latestShareCardDataUrl = "";
+  resetShareCardCache(response);
   syncReportUrl(response.reportUid);
   const reportTheme = slugTheme(response.reportType);
   const themeCopy = THEME_COPY[reportTheme];
@@ -806,13 +848,13 @@ function renderReport(response) {
     <div class="zd-summary-list">
       <div class="zd-summary-item">
         <div class="zd-summary-name">${escapeHtml((response.personA && response.personA.name) || "我")}</div>
-        <div class="zd-summary-sep">：</div>
+        <div class="zd-summary-sep">·</div>
         <div class="zd-summary-value">${escapeHtml(formatTriplet(response.zodiacA))}</div>
       </div>
       ${isLove ? `
       <div class="zd-summary-item">
         <div class="zd-summary-name">${escapeHtml((response.personB && response.personB.name) || "TA")}</div>
-        <div class="zd-summary-sep">：</div>
+        <div class="zd-summary-sep">·</div>
         <div class="zd-summary-value">${escapeHtml(formatTriplet(response.zodiacB))}</div>
       </div>` : ""}
     </div>
@@ -888,7 +930,7 @@ async function loadSharedReportFromUrl() {
   } catch (error) {
     stopLoadingAnimation(0);
     switchPage("form");
-    showFormError(error.message || "报告加载失败");
+    showFormError(error.message || "生成失败");
     return false;
   }
 }
@@ -963,7 +1005,7 @@ async function renderSharePreview(forceRegenerate = false) {
   const dataUrl = !forceRegenerate && latestShareCardDataUrl
     ? latestShareCardDataUrl
     : await generateShareCardDataUrl();
-  preview.innerHTML = `<img src="${dataUrl}" alt="分享卡" class="share-preview-image">`;
+  preview.innerHTML = `<img src="${dataUrl}" alt="分享卡预览" class="share-preview-image">`;
 }
 
 async function saveShareCardToAlbum() {
@@ -1003,6 +1045,141 @@ async function openNativeShare() {
     return false;
   }
 }
+
+function getSafeShareUrl() {
+  if (!latestReport || !latestReport.reportUid) {
+    throw new Error("请先生成报告");
+  }
+  return getReportShareUrl(latestReport.reportUid);
+}
+
+function renderShareLinkBox(message) {
+  const box = $("share-link-box");
+  if (!box) return;
+  try {
+    const shareUrl = getSafeShareUrl();
+    box.classList.remove("hidden");
+    box.innerHTML = `
+      <span class="share-link-label">${escapeHtml(message || "如果系统复制不可用，可手动复制下方链接")}</span>
+      <span class="share-link-value">${escapeHtml(shareUrl)}</span>
+    `;
+  } catch {
+    box.classList.add("hidden");
+    box.innerHTML = "";
+  }
+}
+
+function fallbackCopyText(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "readonly");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  textarea.style.top = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!copied) {
+    throw new Error("复制失败");
+  }
+}
+
+async function copyReportLinkWithFallback() {
+  const shareUrl = getSafeShareUrl();
+  if (window.isSecureContext && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      return;
+    } catch {}
+  }
+  fallbackCopyText(shareUrl);
+}
+
+function buildEnhancedShareCardSource() {
+  const reportType = latestReport ? latestReport.reportType : "";
+  const title = getShareCardTitle(reportType);
+  const reportId = latestReport && latestReport.reportUid ? latestReport.reportUid : "Report";
+  const personAName = (latestReport && latestReport.personA && latestReport.personA.name) || "我";
+  const personBName = (latestReport && latestReport.personB && latestReport.personB.name) || "TA";
+  const zodiacA = ((latestReport && latestReport.zodiacA && latestReport.zodiacA.sun) || "SUN").toUpperCase();
+  const zodiacB = ((latestReport && latestReport.zodiacB && latestReport.zodiacB.sun) || "MOON").toUpperCase();
+  const zodiacAIcon = getZodiacSymbol(zodiacA);
+  const zodiacBIcon = getZodiacSymbol(zodiacB);
+  const isLove = reportType === "love";
+  const shareUrl = latestReport && latestReport.reportUid ? getReportShareUrl(latestReport.reportUid) : "";
+  return `
+    <div class="sc-emblem">
+      <div class="sc-emblem-text">XIAODENG ARCHIVE</div>
+      <div class="sc-emblem-deco">✦ ✦ ✦</div>
+    </div>
+    <div class="sc-names">
+      <div class="sc-name-row ${isLove ? "" : "single-report"}">
+        <div class="sc-name-block">
+          <div class="sc-zodiac-icon">${escapeHtml(zodiacAIcon)}</div>
+          <div class="sc-name">${escapeHtml(personAName)}</div>
+          <div class="sc-name-zodiac">${escapeHtml(zodiacA)}</div>
+        </div>
+        ${isLove ? `<div class="sc-heart">❤</div>
+        <div class="sc-name-block">
+          <div class="sc-zodiac-icon">${escapeHtml(zodiacBIcon)}</div>
+          <div class="sc-name">${escapeHtml(personBName)}</div>
+          <div class="sc-name-zodiac">${escapeHtml(zodiacB)}</div>
+        </div>` : ""}
+      </div>
+    </div>
+    <div class="sc-score-block">
+      <div><span class="sc-score">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</span><span class="sc-score-unit">/100</span></div>
+      <div class="sc-score-label">REPORT SCORE</div>
+    </div>
+    <div class="sc-type">
+      <span class="sc-type-text">${escapeHtml((latestReport && latestReport.relationshipType) || title)}</span>
+    </div>
+    <div class="sc-tagline">${escapeHtml((latestReport && latestReport.tagline) || "愿你更了解自己，也更从容地做选择。")}</div>
+    <div class="sc-footer">
+      <div class="sc-id">COLLECTOR CODE · ${escapeHtml(reportId)}</div>
+      <div class="sc-by">CREATED BY <span class="name">小登哥 · XIAODENG</span></div>
+      <div class="sc-call">打开同一链接即可查看完整报告<br><strong>${escapeHtml(shareUrl)}</strong></div>
+    </div>
+  `;
+}
+
+const originalGenerateShareCardDataUrl = generateShareCardDataUrl;
+generateShareCardDataUrl = async function patchedGenerateShareCardDataUrl() {
+  if (!latestReport) throw new Error("请先生成报告");
+  if (typeof window.html2canvas !== "function") {
+    throw new Error("当前环境不支持生成图片，可复制链接");
+  }
+  const source = document.createElement("div");
+  source.id = "share-card-source";
+  source.innerHTML = buildEnhancedShareCardSource();
+  document.body.appendChild(source);
+  try {
+    const canvas = await window.html2canvas(source, {
+      backgroundColor: null,
+      scale: Math.min(window.devicePixelRatio || 2, 3),
+      useCORS: true
+    });
+    latestShareCardDataUrl = canvas.toDataURL("image/png");
+    return latestShareCardDataUrl;
+  } finally {
+    document.body.removeChild(source);
+  }
+};
+
+renderSharePreview = async function patchedRenderSharePreview(forceRegenerate = false) {
+  renderShareLinkBox();
+  const preview = $("share-preview");
+  if (!preview) return;
+  preview.innerHTML = `<div class="share-preview-loading">正在生成分享卡...</div>`;
+  const dataUrl = !forceRegenerate && latestShareCardDataUrl
+    ? latestShareCardDataUrl
+    : await generateShareCardDataUrl();
+  preview.innerHTML = `<img src="${dataUrl}" alt="分享卡预览" class="share-preview-image">`;
+};
 
 function bindFormEvents() {
   document.querySelectorAll(".theme-tab").forEach((button) => {
@@ -1137,6 +1314,7 @@ async function init() {
   document.title = "灵魂合盘 · 你和 TA 的缘分密码 · 小登哥出品";
   populateDateSelects();
   bindFormEvents();
+  setupFinalShareHandlers();
   try {
     await loadCityData();
   } catch (error) {
@@ -1157,6 +1335,240 @@ async function init() {
   });
 }
 
+function bindExclusiveClick(id, handler) {
+  const element = $(id);
+  if (!element) return;
+  const clone = element.cloneNode(true);
+  element.replaceWith(clone);
+  clone.addEventListener("click", handler);
+}
+
+function getFinalShareUrl() {
+  if (!latestReport || !latestReport.reportUid) {
+    throw new Error("请先生成报告");
+  }
+  return getReportShareUrl(latestReport.reportUid);
+}
+
+function renderFinalShareLinkBox(message) {
+  const box = $("share-link-box");
+  if (!box) return;
+  try {
+    const shareUrl = getFinalShareUrl();
+    box.classList.remove("hidden");
+    box.innerHTML = `
+      <span class="share-link-label">${escapeHtml(message || "如果自动复制不可用，可手动复制下方链接")}</span>
+      <span class="share-link-value">${escapeHtml(shareUrl)}</span>
+    `;
+  } catch {
+    box.classList.add("hidden");
+    box.innerHTML = "";
+  }
+}
+
+function fallbackCopyShareText(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "readonly");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  textarea.style.top = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!copied) {
+    throw new Error("复制失败，请手动复制");
+  }
+}
+
+async function copyReportLinkWithFinalFallback() {
+  const shareUrl = getFinalShareUrl();
+  if (window.isSecureContext && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      return;
+    } catch {}
+  }
+  fallbackCopyShareText(shareUrl);
+}
+
+function buildFinalShareCardSource() {
+  const reportType = latestReport ? latestReport.reportType : "";
+  const title = getShareCardTitle(reportType);
+  const reportId = latestReport && latestReport.reportUid ? latestReport.reportUid : "Report";
+  const personAName = (latestReport && latestReport.personA && latestReport.personA.name) || "我";
+  const personBName = (latestReport && latestReport.personB && latestReport.personB.name) || "TA";
+  const zodiacA = ((latestReport && latestReport.zodiacA && latestReport.zodiacA.sun) || "SUN").toUpperCase();
+  const zodiacB = ((latestReport && latestReport.zodiacB && latestReport.zodiacB.sun) || "MOON").toUpperCase();
+  const zodiacAIcon = getZodiacSymbol(zodiacA);
+  const zodiacBIcon = getZodiacSymbol(zodiacB);
+  const isLove = reportType === "love";
+  const shareUrl = latestReport && latestReport.reportUid ? getReportShareUrl(latestReport.reportUid) : "";
+  return `
+    <div class="sc-emblem">
+      <div class="sc-emblem-text">XIAODENG ARCHIVE</div>
+      <div class="sc-emblem-deco">✦ ✦ ✦</div>
+    </div>
+    <div class="sc-names">
+      <div class="sc-name-row ${isLove ? "" : "single-report"}">
+        <div class="sc-name-block">
+          <div class="sc-zodiac-icon">${escapeHtml(zodiacAIcon)}</div>
+          <div class="sc-name">${escapeHtml(personAName)}</div>
+          <div class="sc-name-zodiac">${escapeHtml(zodiacA)}</div>
+        </div>
+        ${isLove ? `<div class="sc-heart">❤</div>
+        <div class="sc-name-block">
+          <div class="sc-zodiac-icon">${escapeHtml(zodiacBIcon)}</div>
+          <div class="sc-name">${escapeHtml(personBName)}</div>
+          <div class="sc-name-zodiac">${escapeHtml(zodiacB)}</div>
+        </div>` : ""}
+      </div>
+    </div>
+    <div class="sc-score-block">
+      <div><span class="sc-score">${escapeHtml(String(latestReport && latestReport.score != null ? latestReport.score : "--"))}</span><span class="sc-score-unit">/100</span></div>
+      <div class="sc-score-label">REPORT SCORE</div>
+    </div>
+    <div class="sc-type">
+      <span class="sc-type-text">${escapeHtml((latestReport && latestReport.relationshipType) || title)}</span>
+    </div>
+    <div class="sc-tagline">${escapeHtml((latestReport && latestReport.tagline) || "愿你更了解自己，也更从容地做选择。")}</div>
+    <div class="sc-footer">
+      <div class="sc-id">COLLECTOR CODE · ${escapeHtml(reportId)}</div>
+      <div class="sc-by">CREATED BY <span class="name">小登哥 · XIAODENG</span></div>
+      <div class="sc-call">打开同一链接即可查看完整报告<br><strong>${escapeHtml(shareUrl)}</strong></div>
+    </div>
+  `;
+}
+
+generateShareCardDataUrl = async function finalGenerateShareCardDataUrl() {
+  if (!latestReport) throw new Error("请先生成报告");
+  if (typeof window.html2canvas !== "function") {
+    throw new Error("当前环境不支持生成图片，可复制链接");
+  }
+  const source = document.createElement("div");
+  source.id = "share-card-source";
+  source.innerHTML = buildFinalShareCardSource();
+  document.body.appendChild(source);
+  try {
+    const canvas = await window.html2canvas(source, {
+      backgroundColor: null,
+      scale: Math.min(window.devicePixelRatio || 2, 3),
+      useCORS: true
+    });
+    latestShareCardDataUrl = canvas.toDataURL("image/png");
+    return latestShareCardDataUrl;
+  } finally {
+    document.body.removeChild(source);
+  }
+};
+
+renderSharePreview = async function finalRenderSharePreview(forceRegenerate = false) {
+  renderFinalShareLinkBox();
+  const preview = $("share-preview");
+  if (!preview) return;
+  preview.innerHTML = `<div class="share-preview-loading">正在生成分享卡...</div>`;
+  const dataUrl = !forceRegenerate && latestShareCardDataUrl
+    ? latestShareCardDataUrl
+    : await generateShareCardDataUrl();
+  preview.innerHTML = `<img src="${dataUrl}" alt="分享卡预览" class="share-preview-image">`;
+};
+
+function setupFinalShareHandlers() {
+  bindExclusiveClick("share-btn", async () => {
+    if (!latestReport || !latestReport.reportUid) {
+      showToast("请先生成报告");
+      return;
+    }
+    try {
+      const shared = await openNativeShare();
+      if (!shared) {
+        renderFinalShareLinkBox("系统分享暂不可用，可复制下方链接");
+        await renderSharePreview();
+        openModal("share-modal");
+      }
+    } catch {
+      renderFinalShareLinkBox("系统分享暂不可用，可复制下方链接");
+      await renderSharePreview();
+      openModal("share-modal");
+    }
+  });
+
+  bindExclusiveClick("share-download", async () => {
+    try {
+      await renderSharePreview();
+      await saveShareCardToAlbum();
+      showToast("分享卡已生成，可直接保存");
+    } catch (error) {
+      renderFinalShareLinkBox("当前环境不支持保存图片时，可复制下方链接");
+      showToast((error && error.message) || "当前环境不支持生成图片，可复制链接");
+    }
+  });
+
+  bindExclusiveClick("share-copy-link", async () => {
+    try {
+      await copyReportLinkWithFinalFallback();
+      renderFinalShareLinkBox("链接已准备好，你也可以手动复制下方内容");
+      showToast("分享链接已复制");
+    } catch (error) {
+      renderFinalShareLinkBox("自动复制不可用，请手动复制下方链接");
+      showToast((error && error.message) || "复制分享链接失败，请手动复制");
+    }
+  });
+
+  bindExclusiveClick("pdf-btn", async () => {
+    try {
+      await renderSharePreview(true);
+      renderFinalShareLinkBox();
+      openModal("share-modal");
+      showToast("分享卡已生成，请长按图片保存到相册");
+    } catch (error) {
+      renderFinalShareLinkBox("当前环境不支持生成图片时，可复制下方链接");
+      showToast((error && error.message) || "生成分享卡失败，请稍后再试");
+    }
+  });
+}
+
+generateShareCardDataUrl = async function cachedGenerateShareCardDataUrl() {
+  if (!latestReport) throw new Error("请先生成报告");
+  const cacheKey = ensureShareCardCacheFresh();
+  if (typeof window.html2canvas !== "function") {
+    throw new Error("当前环境不支持生成图片，可复制链接");
+  }
+  const source = document.createElement("div");
+  source.id = "share-card-source";
+  source.innerHTML = buildFinalShareCardSource();
+  document.body.appendChild(source);
+  try {
+    const canvas = await window.html2canvas(source, {
+      backgroundColor: null,
+      scale: Math.min(window.devicePixelRatio || 2, 3),
+      useCORS: true
+    });
+    latestShareCardDataUrl = canvas.toDataURL("image/png");
+    latestShareCardCacheKey = cacheKey;
+    return latestShareCardDataUrl;
+  } finally {
+    document.body.removeChild(source);
+  }
+};
+
+renderSharePreview = async function cachedRenderSharePreview(forceRegenerate = false) {
+  renderFinalShareLinkBox();
+  const preview = $("share-preview");
+  if (!preview) return;
+  preview.innerHTML = `<div class="share-preview-loading">正在生成分享卡...</div>`;
+  ensureShareCardCacheFresh();
+  const dataUrl = !forceRegenerate && latestShareCardDataUrl
+    ? latestShareCardDataUrl
+    : await generateShareCardDataUrl();
+  preview.innerHTML = `<img src="${dataUrl}" alt="分享卡预览" class="share-preview-image">`;
+};
+
 init().catch((error) => {
   showFormError(error.message || "页面初始化失败");
 });
+
