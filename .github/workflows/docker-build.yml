@@ -4,7 +4,13 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'frontend/**'
+      - 'assets/**'
+      - 'img/**'
+      - 'admin.html'
+      - 'index.html'
+      - 'preview-report-modes.html'
+      - 'Dockerfile'
+      - '.dockerignore'
       - '.github/workflows/docker-build.yml'
   workflow_dispatch:
 
@@ -35,7 +41,7 @@ jobs:
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend
+          context: .
           push: true
           build-args: |
             APP_VERSION=${{ github.sha }}

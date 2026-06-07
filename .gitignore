@@ -16,5 +16,5 @@ Thumbs.db
 
 # Misc
 .workbuddy/
-data/
+/data/
 *.log
