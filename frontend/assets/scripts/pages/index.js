@@ -266,9 +266,26 @@ function escapeHtml(value) {
 
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  const resp = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(data.message || `璇锋眰澶辫触 (${resp.status})`);
+  let resp;
+  try {
+    resp = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch (error) {
+    const message = error && error.message ? String(error.message) : "";
+    if (message.includes("Failed to fetch") || error instanceof TypeError) {
+      throw new Error("网络连接失败，请确认前后端服务已经启动");
+    }
+    throw new Error(message || "请求发送失败，请稍后再试");
+  }
+
+  const contentType = resp.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await resp.json().catch(() => ({}))
+    : { message: (await resp.text().catch(() => "")).trim() };
+
+  if (!resp.ok) {
+    const message = data && data.message ? String(data.message) : `请求失败 (${resp.status})`;
+    throw new Error(message);
+  }
   return data;
 }
 
@@ -428,7 +445,7 @@ function renderTheme(theme) {
   $("hero-tag").textContent = copy.heroTag;
   $("hero-title").innerHTML = copy.heroTitle;
   $("submit-btn").textContent = copy.submitText;
-  $("theme-hint").textContent = activeTheme === "love" ? "宸﹀彸婊戝姩鍒囨崲涓嶅悓涓婚" : "宸﹀彸婊戝姩鏌ョ湅涓嶅悓涓婚鍐呭";
+  $("theme-hint").textContent = activeTheme === "love" ? "左右滑动切换不同主题" : "左右滑动查看不同主题内容";
   document.querySelectorAll(".theme-tab").forEach((button) => {
     button.classList.toggle("active", button.dataset.theme === activeTheme);
   });
@@ -536,7 +553,7 @@ function getLoadingStepIndex(percent) {
 }
 
 function getLoadingLabel(percent) {
-  if (percent >= 92) return "姝ｅ湪鏁寸悊缁撴灉缁嗚妭...";
+  if (percent >= 92) return "正在整理结果细节...";
   if (percent >= 78) return "正在整理最终报告...";
   return LOADING_STEPS[Math.min(getLoadingStepIndex(percent), LOADING_STEPS.length - 1)];
 }
@@ -680,7 +697,7 @@ function validateCurrentForm() {
   if (activeTheme === "love") {
     const b = stateByTheme[activeTheme].b;
     if (!b.name.trim()) return "请先填写 TA 的名字";
-    if (!b.birthProvince || !b.birthCity || !b.birthDistrict) return "璇峰畬鏁撮€夋嫨 TA 鐨勫嚭鐢熷湴";
+    if (!b.birthProvince || !b.birthCity || !b.birthDistrict) return "请完整选择 TA 的出生地";
     if ((a.gender || "").toLowerCase() === (b.gender || "").toLowerCase()) {
         return "爱情合盘暂不支持同一性别组合，请选择一男一女";
     }
@@ -794,7 +811,7 @@ function buildShareCardSource() {
 async function generateShareCardDataUrl() {
   if (!latestReport) throw new Error("请先生成报告");
   if (typeof window.html2canvas !== "function") {
-    throw new Error("当前环境暂不支持生成分享卡");
+    throw new Error("当前环境不支持生成图片，可复制链接");
   }
   const source = document.createElement("div");
   source.id = "share-card-source";
