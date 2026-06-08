@@ -1,4 +1,4 @@
-﻿﻿<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -15,7 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-<link rel="stylesheet" href="./assets/styles/pages/index.css?v=16">
+<link rel="stylesheet" href="./assets/styles/pages/index.css?v=20">
 </head>
 <body>
 
@@ -294,6 +294,9 @@
 
     <div id="form-error" class="error-box hidden"></div>
     <button class="submit-btn" id="submit-btn">✨ 开始生成报告</button>
+    <div style="text-align:center;margin-top:16px;">
+      <a href="javascript:void(0)" id="lunar-trigger" style="font-size:13px;color:var(--ink-soft);text-decoration:none;border-bottom:1px dashed rgba(155,127,199,0.3);padding-bottom:2px;">☰ 公农历互转</a>
+    </div>
   </div>
 
   <!-- ============== Page 2: Loading ============== -->
@@ -551,6 +554,42 @@
       <div class="city-picker-actions">
         <button class="modal-btn secondary" id="city-picker-clear">清空</button>
         <button class="modal-btn primary" id="city-picker-confirm">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="lunar-modal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <button class="pay-modal-close" id="lunar-modal-close">✕</button>
+      <div class="pay-modal-icon" style="font-size:28px;">☰</div>
+      <div class="modal-title">公农历互转</div>
+      <div class="modal-sub" style="font-size:12px;">支持 1900–2100 年</div>
+    </div>
+    <div class="modal-body">
+      <div class="lunar-tabs" id="lunar-tabs">
+        <div class="lunar-tab active" data-mode="s2l">阳历转农历</div>
+        <div class="lunar-tab" data-mode="l2s">农历转阳历</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;">
+        <div style="flex:1;">
+          <label style="display:block;font-size:13px;color:var(--ink-light);margin-bottom:6px;">年</label>
+          <select class="input" id="lunar-year" style="text-align:center;"></select>
+        </div>
+        <div style="flex:1;">
+          <label style="display:block;font-size:13px;color:var(--ink-light);margin-bottom:6px;">月</label>
+          <select class="input" id="lunar-month" style="text-align:center;"></select>
+        </div>
+        <div style="flex:1;">
+          <label style="display:block;font-size:13px;color:var(--ink-light);margin-bottom:6px;">日</label>
+          <select class="input" id="lunar-day" style="text-align:center;"></select>
+        </div>
+      </div>
+      <button class="pay-confirm-btn" id="lunar-convert-btn" style="margin-top:0;">转换</button>
+      <div class="lunar-result" id="lunar-result">
+        <div class="lunar-result-main" id="lunar-result-main"></div>
+        <div class="lunar-result-sub" id="lunar-result-sub"></div>
       </div>
     </div>
   </div>

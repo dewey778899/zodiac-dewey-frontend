@@ -139,6 +139,37 @@
     color: var(--ink-soft);
   }
 
+  /* ============ Lunar Modal ============ */
+  #lunar-modal .lunar-tabs {
+    display: flex; background: rgba(255,255,255,0.5);
+    border-radius: 100px; padding: 4px; margin-bottom: 14px;
+    border: 1.5px solid rgba(255,181,167,0.25);
+  }
+  #lunar-modal .lunar-tab {
+    flex: 1; padding: 9px 10px; border-radius: 100px;
+    font-size: 13px; font-weight: 600; text-align: center;
+    transition: all .3s ease; color: var(--ink-light);
+    cursor: pointer; user-select: none; font-family: inherit;
+    background: none; border: none;
+  }
+  #lunar-modal .lunar-tab.active {
+    background: linear-gradient(135deg, #ff8b7a, #9b7fc7);
+    color: #fff; box-shadow: 0 4px 16px rgba(155,127,199,0.3);
+  }
+  #lunar-modal .lunar-result {
+    background: rgba(243,252,246,0.98);
+    border: 1px solid rgba(91,193,128,0.22);
+    border-radius: 12px; padding: 16px; margin-top: 14px;
+    text-align: center; display: none;
+  }
+  #lunar-modal .lunar-result.show { display: block; }
+  #lunar-modal .lunar-result-main {
+    font-size: 18px; font-weight: 600; color: var(--lilac-deep);
+    margin-bottom: 4px; font-family: "Noto Serif SC", serif;
+  }
+  #lunar-modal .lunar-result-main.err { color: #c0392b; }
+  #lunar-modal .lunar-result-sub { font-size: 13px; color: var(--ink-soft); }
+
   .form-slider-shell {
     overflow: hidden;
     margin-bottom: 10px;
