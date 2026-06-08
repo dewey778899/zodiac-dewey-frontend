@@ -1563,6 +1563,7 @@
     padding: 20px 20px 12px;
     text-align: center;
     border-bottom: 1px solid #f0e8ef;
+    position: relative;
   }
   .modal-title {
     font-size: 16px; font-weight: 700; color: var(--ink);
