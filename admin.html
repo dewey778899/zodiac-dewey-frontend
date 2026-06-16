@@ -1,16 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>小登哥后台</title>
-<link rel="stylesheet" href="./assets/styles/pages/admin.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小登哥后台</title>
+  <link rel="stylesheet" href="./assets/styles/pages/admin.css">
 </head>
 <body>
-  <div class="page">
+  <div class="page-shell">
     <div id="login-view" class="login-wrap">
-      <h2>小登哥后台</h2>
-      <p>先用单管理员账号密码登录。当前版本支持查看支付创建/成功、模型点击/成功、订单补单与回调日志。</p>
+      <div class="login-badge">ZODIAC OPERATIONS</div>
+      <h1>小登哥后台</h1>
+      <p>统一管理报告、支付订单、返现账户、返现记录与提现审核。先登录，再进入工作台。</p>
       <div class="field">
         <label for="admin-username">管理员账号</label>
         <input id="admin-username" autocomplete="username" placeholder="请输入账号">
@@ -19,162 +20,93 @@
         <label for="admin-password">管理员密码</label>
         <input id="admin-password" type="password" autocomplete="current-password" placeholder="请输入密码">
       </div>
-      <button class="btn primary" id="login-btn">登录后台</button>
+      <button class="btn btn-primary btn-block" id="login-btn">进入后台</button>
       <div class="error" id="login-error"></div>
     </div>
 
-    <div id="dashboard-view" class="hidden">
-      <div class="hero">
-        <div>
-          <h1 class="hero-title">小登哥运营后台</h1>
-          <p class="hero-sub">查看二维码展示 / 切换统计、模型点击 / 成功统计，以及最新报告记录。</p>
-        </div>
-        <div class="top-actions">
-          <div class="chip" id="login-status">已登录</div>
-          <button class="btn secondary" id="refresh-btn">刷新数据</button>
-          <button class="btn secondary" id="logout-btn">退出登录</button>
-        </div>
-      </div>
-
-      <div class="dashboard">
-        <div class="card">
-          <h2 class="section-title">核心指标</h2>
-          <p class="section-sub">今天 vs 累计，一眼看到模型使用、支付创建、支付成功和回调异常。</p>
-          <div class="metric-grid" id="metric-grid"></div>
-        </div>
-
-        <div class="card">
-          <h2 class="section-title">支付订单</h2>
-          <p class="section-sub">支持查看官方支付订单、异常补单、关闭未支付订单，以及最近回调日志。</p>
-          <div class="order-tabs">
-            <button class="order-tab active" data-status="PAYING">支付中</button>
-            <button class="order-tab" data-status="PAID">已支付</button>
-            <button class="order-tab" data-status="CLOSED">已关闭</button>
-            <button class="order-tab" data-status="">全部</button>
-          </div>
-          <table class="report-table order-table">
-            <thead>
-              <tr>
-                <th>订单号</th>
-                <th>渠道</th>
-                <th>场景</th>
-                <th>金额</th>
-                <th>状态</th>
-                <th>验签</th>
-                <th>Token</th>
-                <th>创建时间</th>
-                <th>支付时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="order-body"></tbody>
-          </table>
-          <div class="empty hidden" id="order-empty">暂无订单数据</div>
-          <div class="pager">
-            <div class="pager-info" id="order-pager-info"></div>
-            <div>
-              <button class="btn secondary" id="order-prev-page">上一页</button>
-              <button class="btn secondary" id="order-next-page">下一页</button>
-            </div>
+    <div id="dashboard-view" class="workspace hidden">
+      <aside class="sidebar">
+        <div class="brand-card">
+          <div class="brand-mark">登</div>
+          <div>
+            <div class="brand-eyebrow">运营工作台</div>
+            <div class="brand-title">小登哥后台</div>
           </div>
         </div>
 
-        <div class="card">
-          <h2 class="section-title">深度解锁记录</h2>
-          <p class="section-sub">这里会记录通过“关注抖音解锁”提交的深度解析凭证，方便后续回查是否已使用。</p>
-          <table class="report-table order-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>来源</th>
-                <th>抖音名</th>
-                <th>主题</th>
-                <th>已关注</th>
-                <th>Token 状态</th>
-                <th>提交时间</th>
-                <th>使用时间</th>
-              </tr>
-            </thead>
-            <tbody id="unlock-body"></tbody>
-          </table>
-          <div class="empty hidden" id="unlock-empty">暂无深度解锁记录</div>
-        </div>
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-view="overview">
+            <span class="nav-icon">◎</span>
+            <span class="nav-copy">
+              <span class="nav-kicker">01</span>
+              <span class="nav-label">总览</span>
+            </span>
+          </button>
+          <button class="nav-item" data-view="reports">
+            <span class="nav-icon">▣</span>
+            <span class="nav-copy">
+              <span class="nav-kicker">02</span>
+              <span class="nav-label">报告管理</span>
+            </span>
+          </button>
+          <button class="nav-item" data-view="orders">
+            <span class="nav-icon">◫</span>
+            <span class="nav-copy">
+              <span class="nav-kicker">03</span>
+              <span class="nav-label">支付订单</span>
+            </span>
+          </button>
+          <button class="nav-item" data-view="accounts">
+            <span class="nav-icon">◇</span>
+            <span class="nav-copy">
+              <span class="nav-kicker">04</span>
+              <span class="nav-label">返现账户</span>
+            </span>
+          </button>
+          <button class="nav-item" data-view="rewards">
+            <span class="nav-icon">✦</span>
+            <span class="nav-copy">
+              <span class="nav-kicker">05</span>
+              <span class="nav-label">返现记录</span>
+            </span>
+          </button>
+          <button class="nav-item" data-view="withdrawals">
+            <span class="nav-icon">△</span>
+            <span class="nav-copy">
+              <span class="nav-kicker">06</span>
+              <span class="nav-label">提现审核</span>
+            </span>
+          </button>
+        </nav>
 
-        <div class="card">
-          <h2 class="section-title">最近 7 天趋势</h2>
-          <p class="section-sub">重点关注模型点击、生成成功、订单创建和支付成功的变化节奏。</p>
-          <table class="trend-table">
-            <thead>
-              <tr>
-                <th>日期</th>
-                <th>DeepSeek 点击</th>
-                <th>深度解析 点击</th>
-                <th>DeepSeek 成功</th>
-                <th>深度解析 成功</th>
-                <th>支付创建</th>
-                <th>支付成功</th>
-                <th>补单次数</th>
-              </tr>
-            </thead>
-            <tbody id="trend-body"></tbody>
-          </table>
+        <div class="sidebar-note">
+          <div class="note-title">当前重点</div>
+          <p>优先关注支付异常、返现补发、提现审核与邀请归因修正。</p>
         </div>
+      </aside>
 
-        <div class="card">
-          <h2 class="section-title">回调日志</h2>
-          <p class="section-sub">点击订单行内按钮后，可在这里查看最近 20 条回调或补单日志。</p>
-          <div class="empty" id="log-empty">先点击订单列表中的“查看日志”</div>
-          <table class="report-table hidden" id="log-table">
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>渠道</th>
-                <th>类型</th>
-                <th>验签</th>
-                <th>结果</th>
-                <th>错误</th>
-                <th>原始回调</th>
-              </tr>
-            </thead>
-            <tbody id="log-body"></tbody>
-          </table>
-        </div>
-
-        <div class="card">
-          <h2 class="section-title">报告记录</h2>
-          <p class="section-sub">支持按报告编号、双方昵称、模型搜索，方便回查具体生成记录。</p>
-          <div class="filters">
-            <input id="report-query" placeholder="搜索报告编号 / 昵称 / 模型">
-            <button class="btn primary" id="search-btn">搜索</button>
+      <main class="workspace-main">
+        <header class="workspace-topbar">
+          <div>
+            <div class="workspace-breadcrumb" id="view-breadcrumb">运营中心 / 总览</div>
+            <div class="topbar-kicker" id="view-kicker">OVERVIEW</div>
+            <h1 class="workspace-title" id="view-title">总览</h1>
+            <p class="workspace-subtitle" id="view-subtitle">查看核心指标、近 7 天趋势以及最近解锁记录。</p>
           </div>
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th>报告编号</th>
-                <th>双方昵称</th>
-                <th>模型</th>
-                <th>分数</th>
-                <th>关系类型</th>
-                <th>微信号</th>
-                <th>生成时间</th>
-              </tr>
-            </thead>
-            <tbody id="report-body"></tbody>
-          </table>
-          <div class="empty hidden" id="report-empty">暂时还没有匹配的数据。</div>
-          <div class="pager">
-            <div class="pager-info" id="pager-info"></div>
-            <div>
-              <button class="btn secondary" id="prev-page">上一页</button>
-              <button class="btn secondary" id="next-page">下一页</button>
-            </div>
+          <div class="topbar-actions">
+            <div class="chip chip-soft" id="env-status">本地环境</div>
+            <div class="chip chip-soft" id="refresh-status">等待刷新</div>
+            <div class="chip" id="login-status">已登录</div>
+            <button class="btn btn-secondary" id="refresh-btn">刷新数据</button>
+            <button class="btn btn-secondary" id="logout-btn">退出登录</button>
           </div>
-        </div>
-      </div>
+        </header>
+
+        <section id="module-container" class="module-container"></section>
+      </main>
     </div>
   </div>
 
-<script type="module" src="./assets/scripts/pages/admin.js"></script>
+  <script type="module" src="./assets/scripts/pages/admin.js"></script>
 </body>
 </html>
-
