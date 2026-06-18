@@ -1446,6 +1446,36 @@
     cursor: not-allowed;
     opacity: 0.85;
   }
+  .pay-channel-select {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .pay-channel-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 8px;
+    background: rgba(28, 26, 33, 0.04);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pay-channel-btn.active {
+    border-color: var(--ink);
+    background: rgba(28, 26, 33, 0.06);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+  .pay-channel-btn:active {
+    transform: translateY(1px);
+  }
   .city-picker-modal {
     max-width: 380px;
   }

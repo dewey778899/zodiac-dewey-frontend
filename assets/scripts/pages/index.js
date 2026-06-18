@@ -246,7 +246,11 @@ const paymentState = {
     career: "",
     wealth: ""
   },
-  unlockSource: "douyin_follow"
+  unlockSource: "payment",
+  outTradeNo: "",
+  payChannel: "wechat",
+  pollTimer: null,
+  payReturnHandled: false
 };
 
 let activeTheme = "love";
@@ -858,6 +862,12 @@ function validateCurrentForm() {
 
 function resetPaymentState() {
   paymentState.accessTokens[activeTheme] = "";
+  paymentState.outTradeNo = "";
+  if (paymentState.pollTimer) {
+    clearTimeout(paymentState.pollTimer);
+    paymentState.pollTimer = null;
+  }
+  paymentState.payReturnHandled = false;
 }
 
 function setPayStatus(text, success = false) {
@@ -867,31 +877,275 @@ function setPayStatus(text, success = false) {
   el.classList.toggle("success", success);
 }
 
-async function submitDouyinUnlock() {
-  const douyinInput = $("douyin-name-input");
-  const followCheck = $("douyin-followed-check");
-  const douyinName = douyinInput ? douyinInput.value.trim() : "";
-  const confirmedFollowed = Boolean(followCheck && followCheck.checked);
-  if (!douyinName) throw new Error("请先填写抖音名");
-  if (!confirmedFollowed) throw new Error("请先确认已关注抖音账号");
-  const clientContext = getClientContext();
-  setPayStatus("正在提交解锁信息...");
-  const result = await api("/api/premium/douyin-unlock", {
-    method: "POST",
-    body: JSON.stringify({
-      douyinName,
-      confirmedFollowed,
-      reportType: slugTheme(activeTheme),
-      deviceToken: clientContext.deviceToken,
-      clientContext: JSON.stringify(clientContext),
-      userAgent: navigator.userAgent || ""
-    })
-  });
-  if (!result.accessToken) throw new Error("解锁失败，请稍后重试");
-  paymentState.accessTokens[activeTheme] = result.accessToken;
-  setPayStatus(result.message || "已解锁深度解析", true);
-  setModel("claude");
+function setPayLoading(loading) {
+  const btn = $("pay-confirm-btn");
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? "处理中..." : "确认支付 ¥29.90";
 }
+
+function selectPayChannel(channel) {
+  paymentState.payChannel = channel;
+  document.querySelectorAll(".pay-channel-btn").forEach(function(btn) {
+    btn.classList.toggle("active", btn.dataset.channel === channel);
+  });
+}
+
+// ===== Invite Code =====
+function getInviteCodeFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  return (params.get("invite") || params.get("ref") || params.get("inviteCode") || "").trim();
+}
+
+function saveInviteCode(code) {
+  if (!code) return;
+  try { localStorage.setItem("zodiac_invite_code", code); } catch(e) {}
+}
+
+function getSavedInviteCode() {
+  try { return localStorage.getItem("zodiac_invite_code") || ""; } catch(e) { return ""; }
+}
+
+function getPendingInviteCode() {
+  return getInviteCodeFromUrl() || getSavedInviteCode();
+}
+
+// ===== Phone Binding =====
+function normalizePhone(value) {
+  return String(value || "").replace(/\s+/g, "").replace(/[^0-9]/g, "").trim();
+}
+
+function getLastBoundPhone() {
+  try { return localStorage.getItem("zodiac_bound_phone") || ""; } catch(e) { return ""; }
+}
+
+function saveBoundPhone(phone) {
+  try { localStorage.setItem("zodiac_bound_phone", phone); } catch(e) {}
+}
+
+async function bindReferralIfNeeded(phone) {
+  var inviteCode = getPendingInviteCode();
+  if (!inviteCode) return;
+  try {
+    await api("/api/referral/bind", {
+      method: "POST",
+      body: JSON.stringify({
+        phone: phone,
+        inviteCode: inviteCode,
+        platform: "WECHAT",
+        deviceToken: ensureDeviceToken(),
+        source: "h5-payment"
+      })
+    });
+    saveBoundPhone(phone);
+  } catch(e) {
+    // non-critical, don't block payment
+    console.warn("Referral binding failed:", e.message || e);
+  }
+}
+
+// ===== Payment Flow =====
+var PAY_AMOUNT_FEN = 2990;
+
+async function createPayOrder(channel) {
+  setPayStatus("正在创建支付订单...");
+  setPayLoading(true);
+  try {
+    var scene = channel === "alipay" ? "alipay_wap" : "wechat_h5";
+    var phone = normalizePhone(($("pay-phone-input") || {}).value || "");
+    if (!phone) {
+      throw new Error("请先填写手机号");
+    }
+
+    // Auto-bind referral on payment
+    await bindReferralIfNeeded(phone);
+
+    var response = await api("/api/pay/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        channel: channel,
+        scene: scene,
+        reportType: slugTheme(activeTheme),
+        amountFen: PAY_AMOUNT_FEN,
+        subject: "深度解析服务",
+        phone: phone,
+        returnUrl: window.location.href.split("?")[0],
+        clientContext: getClientContext()
+      })
+    });
+
+    paymentState.outTradeNo = response.outTradeNo || "";
+    // Store outTradeNo in session storage for return detection
+    if (paymentState.outTradeNo) {
+      try { sessionStorage.setItem("zodiac_pay_otn", paymentState.outTradeNo); } catch(e) {}
+    }
+    return response;
+  } finally {
+    setPayLoading(false);
+  }
+}
+
+function redirectToPayUrl(url) {
+  try { sessionStorage.setItem("zodiac_pay_return", "1"); } catch(e) {}
+  window.location.href = url;
+}
+
+async function handleWechatH5Pay() {
+  try {
+    var order = await createPayOrder("wechat");
+    var payPayload = order.payPayload || {};
+    var mwebUrl = payPayload.mwebUrl;
+    if (!mwebUrl) {
+      throw new Error("未获取到微信支付链接");
+    }
+    if (payPayload.mock) {
+      setPayStatus("当前为开发模拟支付环境，请在正式环境下测试真实支付。", false);
+      // In mock mode, poll for status
+      await pollOrderStatus(order.outTradeNo);
+      return;
+    }
+    setPayStatus("正在跳转到微信支付...");
+    redirectToPayUrl(mwebUrl);
+  } catch (error) {
+    setPayStatus(error.message || "创建微信支付订单失败");
+    setPayLoading(false);
+  }
+}
+
+async function handleAlipayWapPay() {
+  try {
+    var order = await createPayOrder("alipay");
+    var payPayload = order.payPayload || {};
+    var payUrl = payPayload.payUrl;
+    if (!payUrl) {
+      throw new Error("未获取到支付宝支付链接");
+    }
+    if (payPayload.mock) {
+      setPayStatus("当前为开发模拟支付环境，请在正式环境下测试真实支付。", false);
+      await pollOrderStatus(order.outTradeNo);
+      return;
+    }
+    setPayStatus("正在跳转到支付宝支付...");
+    redirectToPayUrl(payUrl);
+  } catch (error) {
+    setPayStatus(error.message || "创建支付宝支付订单失败");
+    setPayLoading(false);
+  }
+}
+
+async function submitPayment() {
+  if (paymentState.payChannel === "alipay") {
+    await handleAlipayWapPay();
+  } else {
+    await handleWechatH5Pay();
+  }
+}
+
+function cancelPolling() {
+  if (paymentState.pollTimer) {
+    clearTimeout(paymentState.pollTimer);
+    paymentState.pollTimer = null;
+  }
+}
+
+async function pollOrderStatus(outTradeNo) {
+  cancelPolling();
+  var startTime = Date.now();
+  var timeoutMs = 180000;
+  var intervalMs = 3000;
+
+  var check = async function() {
+    try {
+      var response = await api("/api/pay/orders/" + encodeURIComponent(outTradeNo));
+      if (response.paid || response.status === "PAID") {
+        handlePaymentSuccess(response);
+        return;
+      }
+      if (response.status === "CLOSED" || response.status === "EXPIRED") {
+        setPayStatus("订单已过期或已关闭，请重新发起支付。", false);
+        return;
+      }
+      if (Date.now() - startTime > timeoutMs) {
+        setPayStatus("支付等待超时，如有任何疑问请联系客服。");
+        return;
+      }
+      setPayStatus("等待支付完成...已等待 " + Math.floor((Date.now() - startTime) / 1000) + " 秒");
+      paymentState.pollTimer = setTimeout(check, intervalMs);
+    } catch (e) {
+      setPayStatus("查询支付状态失败：" + (e.message || e));
+    }
+  };
+
+  await check();
+}
+
+async function consumePaymentToken(outTradeNo) {
+  try {
+    var response = await api("/api/pay/orders/" + encodeURIComponent(outTradeNo) + "/consume", {
+      method: "POST"
+    });
+    return response.success;
+  } catch(e) {
+    console.warn("Token consumption failed:", e.message || e);
+    return false;
+  }
+}
+
+function handlePaymentSuccess(orderResponse) {
+  cancelPolling();
+  var accessToken = orderResponse.accessToken || "";
+  if (accessToken) {
+    paymentState.accessTokens[activeTheme] = accessToken;
+    paymentState.unlockSource = orderResponse.unlockSource === "ADMIN_APPROVED" ? "admin_approved" : "payment";
+  }
+  setPayStatus("支付成功！系统已自动解锁深度解析。", true);
+  setModel("claude");
+  setTimeout(function() {
+    closeModal("pay-modal");
+  }, 800);
+}
+
+// ===== Return-from-Payment Detection =====
+async function handlePaymentReturn() {
+  if (paymentState.payReturnHandled) return;
+  var wasReturning = false;
+  try { wasReturning = sessionStorage.getItem("zodiac_pay_return") === "1"; } catch(e) {}
+  if (!wasReturning) return;
+
+  var outTradeNo = "";
+  try { outTradeNo = sessionStorage.getItem("zodiac_pay_otn") || ""; } catch(e) {}
+  try { sessionStorage.removeItem("zodiac_pay_return"); } catch(e) {}
+  try { sessionStorage.removeItem("zodiac_pay_otn"); } catch(e) {}
+
+  paymentState.payReturnHandled = true;
+
+  if (!outTradeNo) return;
+
+  try {
+    var response = await api("/api/pay/orders/" + encodeURIComponent(outTradeNo));
+    if (response.paid || response.status === "PAID") {
+      // Consume token automatically
+      var consumed = await consumePaymentToken(outTradeNo);
+      if (consumed || response.accessToken) {
+        var token = response.accessToken || "";
+        if (token) {
+          paymentState.accessTokens[activeTheme] = token;
+          paymentState.unlockSource = "payment";
+          setModel("claude");
+          showToast("支付成功！深度解析已解锁。");
+        }
+      }
+    } else if (response.status === "PAYING" || response.status === "CREATED") {
+      showToast("支付处理中，即将刷新状态...");
+      paymentState.outTradeNo = outTradeNo;
+      openModal("pay-modal");
+      pollOrderStatus(outTradeNo);
+    } else {
+      showToast("支付未完成，可在提交表单时重新选择支付方式。");
+    }
+  } catch(e) {
+    console.warn("Payment return check failed:", e.message || e);
+  }
 
 function buildReportId(reportUid) {
   const value = safeText(reportUid, "Report");
@@ -1151,18 +1405,34 @@ async function handleSubmit() {
 
 async function beginPremiumFlow() {
   closeModal("value-modal");
+  // Pre-fill phone if available
+  var phoneEl = $("pay-phone-input");
+  if (phoneEl) {
+    phoneEl.value = getLastBoundPhone() || "";
+  }
+  // Reset payment state
+  cancelPolling();
+  paymentState.payChannel = "wechat";
+  setPayStatus("请选择支付方式并填写手机号，支付成功后自动解锁。");
+  setPayLoading(false);
+  // Highlight wechat button
+  document.querySelectorAll(".pay-channel-btn").forEach(function(btn) {
+    btn.classList.toggle("active", btn.dataset.channel === "wechat");
+  });
+  // Show invite hint if present
+  var inviteHint = $("pay-invite-hint");
+  if (inviteHint) {
+    var code = getPendingInviteCode();
+    inviteHint.textContent = code ? "检测到邀请码：" + code + "，支付后将自动关联返现。请务必填写手机号！" : "";
+  }
   openModal("pay-modal");
-  if ($("douyin-name-input")) $("douyin-name-input").value = "";
-  if ($("douyin-followed-check")) $("douyin-followed-check").checked = false;
-  setPayStatus("先去抖音关注，再回来填写信息即可立即解锁。");
 }
 
 async function enterPremiumReport() {
   try {
-    await submitDouyinUnlock();
-    closeModal("pay-modal");
+    await submitPayment();
   } catch (error) {
-    setPayStatus(error.message || "解锁校验失败");
+    setPayStatus(error.message || "支付发起失败");
   }
 }
 
@@ -1419,6 +1689,8 @@ function bindFormEvents() {
     closeModal("value-modal");
   });
   if ($("pay-confirm-btn")) $("pay-confirm-btn").addEventListener("click", enterPremiumReport);
+  if ($("pay-channel-wechat")) $("pay-channel-wechat").addEventListener("click", function() { selectPayChannel("wechat"); });
+  if ($("pay-channel-alipay")) $("pay-channel-alipay").addEventListener("click", function() { selectPayChannel("alipay"); });
   if ($("restart-btn")) $("restart-btn").addEventListener("click", () => {
     latestReport = null;
     latestShareCardDataUrl = "";
@@ -1514,6 +1786,14 @@ async function init() {
   });
   setModel(themeModelState[activeTheme] || "deepseek");
   renderTheme(activeTheme);
+
+  // Save invite code from URL
+  var urlInviteCode = getInviteCodeFromUrl();
+  if (urlInviteCode) saveInviteCode(urlInviteCode);
+
+  // Handle return from payment gateway
+  handlePaymentReturn().catch(function() {});
+
   if (await loadSharedReportFromUrl()) {
     return;
   }

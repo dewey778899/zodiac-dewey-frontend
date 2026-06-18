@@ -438,39 +438,57 @@
 
 <!-- Premium Unlock Modal -->
 <div class="pay-modal-overlay hidden" id="pay-modal">
-  <div class="pay-modal">
+  <div class="pay-modal" style="max-width: 380px;">
     <div class="pay-modal-header">
       <button class="pay-modal-close" id="pay-modal-close">✕</button>
-      <div class="pay-modal-icon">✨</div>
-      <div class="pay-modal-title">关注抖音解锁深度解析</div>
-      <div class="pay-modal-subtitle">Opus 4.8 深度解析体验</div>
+      <div class="pay-modal-icon">💳</div>
+      <div class="pay-modal-title">解锁深度解析</div>
+      <div class="pay-modal-subtitle">支付 ¥29.90 解锁当前主题一次深度解析</div>
     </div>
     <div class="pay-modal-body">
-      <div class="pay-status-text" id="pay-status-text">先去抖音关注，再回来填写信息即可立即解锁。</div>
-      <div class="pay-qr-area" style="text-align:left;">
-        <div style="font-size: 14px; color: var(--ink-light); margin-bottom: 10px; font-weight: 500;" id="pay-qr-title">抖音账号</div>
-        <div class="pay-price" style="margin:0 0 12px; font-size:26px;">小登哥 · 天蝎射手</div>
-        <div class="pay-open-hint" id="pay-open-hint" style="margin-bottom:14px;">关注完成后，填写你的抖音名并确认“我已关注”，系统会直接发放一次深度解析凭证。</div>
-        <div class="field" style="margin-bottom: 14px;">
-          <label class="field-label" for="douyin-name-input">抖音名</label>
-          <input class="input" id="douyin-name-input" type="text" maxlength="40" placeholder="例如：小王已关注">
-        </div>
-        <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink);margin-bottom:14px;cursor:pointer;">
-          <input id="douyin-followed-check" type="checkbox" style="width:18px;height:18px;">
-          <span>我已关注抖音账号</span>
-        </label>
+      <div class="pay-status-text" id="pay-status-text">请选择支付方式并填写手机号，支付成功后自动解锁。</div>
+
+      <div style="margin: 16px 0;">
+        <label class="field-label" for="pay-phone-input">手机号（用于邀请返现追踪）</label>
+        <input class="input" id="pay-phone-input" type="tel" maxlength="11" placeholder="请输入手机号" autocomplete="tel">
       </div>
-      <div class="pay-steps">
+
+      <div class="pay-price" style="text-align: center; margin: 16px 0;">
+        <span style="font-size: 32px; font-weight: 700; color: var(--ink);">¥29.90</span>
+        <div style="font-size: 13px; color: var(--ink-soft); margin-top: 4px;">支付成功后自动解锁一次深度解析</div>
+      </div>
+
+      <div class="pay-channel-select">
+        <button class="pay-channel-btn active" id="pay-channel-wechat" data-channel="wechat">
+          <span style="font-size: 24px;">💚</span>
+          <span>微信支付</span>
+        </button>
+        <button class="pay-channel-btn" id="pay-channel-alipay" data-channel="alipay">
+          <span style="font-size: 24px;">💙</span>
+          <span>支付宝</span>
+        </button>
+      </div>
+
+      <button class="pay-confirm-btn" id="pay-confirm-btn" type="button">确认支付 ¥29.90</button>
+
+      <div class="pay-steps" style="margin-top: 14px;">
         <div class="pay-step">
           <div class="pay-step-num">1</div>
-          <div id="pay-step-one">前往抖音关注“小登哥 · 天蝎射手”</div>
+          <div>填写手机号，选择支付方式</div>
         </div>
         <div class="pay-step">
           <div class="pay-step-num">2</div>
-          <div id="pay-step-two">填写抖音名后立即自动解锁一次深度解析</div>
+          <div>点击支付按钮跳转到支付页面完成付款</div>
+        </div>
+        <div class="pay-step">
+          <div class="pay-step-num">3</div>
+          <div>支付完成后自动返回，系统解锁深度解析</div>
         </div>
       </div>
-      <button class="pay-confirm-btn" id="pay-confirm-btn" type="button">提交并解锁深度解析</button>
+
+      <div style="text-align: center; margin-top: 12px; font-size: 12px; color: var(--ink-light);">
+        <span id="pay-invite-hint"></span>
+      </div>
     </div>
   </div>
 </div>
