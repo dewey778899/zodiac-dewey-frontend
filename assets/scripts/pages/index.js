@@ -1146,6 +1146,7 @@ async function handlePaymentReturn() {
   } catch(e) {
     console.warn("Payment return check failed:", e.message || e);
   }
+}
 
 function buildReportId(reportUid) {
   const value = safeText(reportUid, "Report");
@@ -1389,7 +1390,7 @@ async function handleSubmit() {
   }
   const selectedModel = themeModelState[activeTheme] || "deepseek";
   if (selectedModel === "claude" && !paymentState.accessTokens[activeTheme]) {
-    openModal("value-modal");
+    beginPremiumFlow();
     return;
   }
   try {
@@ -1404,7 +1405,6 @@ async function handleSubmit() {
 }
 
 async function beginPremiumFlow() {
-  closeModal("value-modal");
   // Pre-fill phone if available
   var phoneEl = $("pay-phone-input");
   if (phoneEl) {
@@ -1670,7 +1670,7 @@ function bindFormEvents() {
       activeTheme = theme;
       if (button.dataset.model === "claude") {
         setModel("claude");
-        openModal("value-modal");
+        beginPremiumFlow();
       } else {
         paymentState.accessTokens[theme] = "";
         setModel("deepseek");
@@ -1681,13 +1681,7 @@ function bindFormEvents() {
   if ($("submit-btn")) $("submit-btn").addEventListener("click", handleSubmit);
   if ($("share-close")) $("share-close").addEventListener("click", () => closeModal("share-modal"));
   if ($("pay-modal-close")) $("pay-modal-close").addEventListener("click", () => closeModal("pay-modal"));
-  if ($("value-modal-close")) $("value-modal-close").addEventListener("click", () => closeModal("value-modal"));
   if ($("city-picker-close")) $("city-picker-close").addEventListener("click", () => closeModal("city-picker-modal"));
-  if ($("value-modal-pay-btn")) $("value-modal-pay-btn").addEventListener("click", beginPremiumFlow);
-  if ($("value-modal-free-btn")) $("value-modal-free-btn").addEventListener("click", () => {
-    setModel("deepseek");
-    closeModal("value-modal");
-  });
   if ($("pay-confirm-btn")) $("pay-confirm-btn").addEventListener("click", enterPremiumReport);
   if ($("pay-channel-wechat")) $("pay-channel-wechat").addEventListener("click", function() { selectPayChannel("wechat"); });
   if ($("pay-channel-alipay")) $("pay-channel-alipay").addEventListener("click", function() { selectPayChannel("alipay"); });
